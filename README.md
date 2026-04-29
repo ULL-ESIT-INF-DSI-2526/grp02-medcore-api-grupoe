@@ -9,3 +9,14 @@
 
 [![Coverage Status](https://coveralls.io/repos/github/ULL-ESIT-INF-DSI-2526/grp02-medcore-api-grupoe/badge.svg?branch=main)](https://coveralls.io/github/ULL-ESIT-INF-DSI-2526/grp02-medcore-api-grupoe?branch=main)
 
+## Modo de uso
+
+### Para ejecutar la aplicación:
+
+1. Ejecuta `npm install` para instalar las dependencias.
+2. Ejecuta `npm start` para iniciar el servidor.
+3. Asegurate de tener Mongodb corriendo en tu máquina local en el puerto 27017.
+
+### Para ejecutar los tests:
+
+1. Ejecuta `npm test` para ejecutar los tests.
