@@ -26,3 +26,17 @@ patientRouter.get('/patients', async (req, res) => {
     res.status(500).send(error);
   }
 });
+
+patientRouter.get('/patients/:id', async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    const patient = await Patient.findById(id);
+    if (!patient) {
+      return res.status(404).send({ message: 'Paciente no encontrado' });
+    }
+    res.status(200).send(patient);
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});

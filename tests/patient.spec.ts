@@ -101,3 +101,30 @@ describe("GET /patients", () => {
     await request(app).get("/p").expect(501); // Ruta incorrecta
   });
 });
+
+describe("GET /patients/:id", () => {
+  test("Deberia obtener un paciente por su ID correctamente", async () => {
+    const patient = await Patient.findOne();
+    const response = await request(app).get(`/patients/${patient!._id}`).expect(200);
+    expect(response.body.fullName).toBe(firstPatient.fullName);
+  });
+
+  test("Deberia devolver error 404 si el paciente no existe", async () => {
+    const nonExistentId = new mongoose.Types.ObjectId();
+    await request(app).get(`/patients/${nonExistentId}`).expect(404);
+  });
+
+  test("Deberia devolver error 500 si hay un fallo en la base de datos", async () => {
+    const findByIdSpy = vi.spyOn(Patient, 'findById').mockRejectedValue(new Error('Fallo simulado en la BD'));
+
+    const dummyId = new mongoose.Types.ObjectId();
+    await request(app).get(`/patients/${dummyId}`).expect(500);
+
+    findByIdSpy.mockRestore();
+  });
+
+  test("Deberia dar error al hacer una petición a un ruta incorrecta", async () => {
+    const patient = await Patient.findOne();
+    await request(app).get(`/p/${patient!._id}`).expect(501); // Ruta incorrecta
+  });
+});
