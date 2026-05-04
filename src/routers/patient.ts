@@ -18,3 +18,11 @@ patientRouter.post('/patients', async (req, res) => {
   }
 });
 
+patientRouter.get('/patients', async (req, res) => {
+  try {
+    const patients = await Patient.find();
+    res.status(200).send(patients);
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});
