@@ -8,7 +8,6 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -30,6 +29,8 @@ jobs:
       run: npm ci
     
     - name: Generate coverage info
+      env:
+        MONGODB_URL: mongodb://127.0.0.1:27017/medcore-test-db
       run: npm run coverage 
 
     - name: Coveralls
