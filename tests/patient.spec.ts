@@ -89,6 +89,24 @@ describe("GET /patients", () => {
     expect(response.body[0].fullName).toBe(firstPatient.fullName);
   });
 
+  test("Deberia filtrar pacientes por nombre completo", async () => {
+    const response = await request(app).get("/patients?fullName=Juan Perez").expect(200);
+    expect(response.body.length).toBe(1);
+    expect(response.body[0].fullName).toBe(firstPatient.fullName);
+  });
+
+  test("Deberia filtrar pacientes por número de identificación", async () => {
+    const response = await request(app).get("/patients?idNumber=12345678A").expect(200);
+    expect(response.body.length).toBe(1);
+    expect(response.body[0].idNumber).toBe(firstPatient.idNumber);
+  });
+
+  test("Deberia filtrar pacientes por número de seguridad social", async () => {
+    const response = await request(app).get("/patients?socialSecurityNumber=1111111111").expect(200);
+    expect(response.body.length).toBe(1);
+    expect(response.body[0].socialSecurityNumber).toBe(firstPatient.socialSecurityNumber);
+  });
+
   test("Deberia devolver error 500 si hay un fallo en la base de datos", async () => {
     const findSpy = vi.spyOn(Patient, 'find').mockRejectedValue(new Error('Fallo simulado en la BD'));
 

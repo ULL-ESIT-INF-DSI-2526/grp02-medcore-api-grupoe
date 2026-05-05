@@ -19,8 +19,20 @@ patientRouter.post('/patients', async (req, res) => {
 });
 
 patientRouter.get('/patients', async (req, res) => {
+  const filter: any = {};
+
+  if (req.query.fullName) {
+    filter.fullName = req.query.fullName;
+  }
+  if (req.query.idNumber) {
+    filter.idNumber = req.query.idNumber;
+  }
+  if (req.query.socialSecurityNumber) {
+    filter.socialSecurityNumber = req.query.socialSecurityNumber;
+  }
+
   try {
-    const patients = await Patient.find();
+    const patients = await Patient.find(filter);
     res.status(200).send(patients);
   } catch (error) {
     res.status(500).send(error);
