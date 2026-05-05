@@ -105,3 +105,43 @@ patientRouter.patch('/patients/:id', async (req, res) => {
     res.status(500).send(error);
   }
 });
+
+/**
+ * Ruta DELETE para eliminar un paciente. Recibe el ID del paciente como query parameter o como parámetro en la URL, busca el paciente en la base de datos y lo elimina.
+ * Si el paciente no existe, devuelve un error 404. Si no se proporciona el ID del paciente, devuelve un error 400. Maneja errores de base de datos y devuelve el código de estado adecuado.
+ */
+patientRouter.delete('/patients/', async (req, res) => {
+  if (!req.query.id) {
+    return res.status(400).send({ message: 'ID del paciente es requerido' });
+  }
+
+  const id = req.query.id as string;
+
+  try {
+    const patient = await Patient.findByIdAndDelete(id);
+    if (!patient) {
+      return res.status(404).send({ message: 'Paciente no encontrado' });
+    }
+    res.status(200).send({ message: 'Paciente eliminado correctamente' });
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});
+
+/**
+ * Ruta DELETE para eliminar un paciente utilizando el ID como parámetro en la URL. Recibe el ID del paciente como parámetro en la URL, busca el paciente en la base de datos y lo elimina.
+ * Si el paciente no existe, devuelve un error 404. Maneja errores de base de datos y devuelve el código de estado adecuado.
+ */
+patientRouter.delete('/patients/:id', async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    const patient = await Patient.findByIdAndDelete(id);
+    if (!patient) {
+      return res.status(404).send({ message: 'Paciente no encontrado' });
+    }
+    res.status(200).send({ message: 'Paciente eliminado correctamente' });
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});

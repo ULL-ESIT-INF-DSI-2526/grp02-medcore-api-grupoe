@@ -221,3 +221,52 @@ describe("PATCH /patients/:id", () => {
     findByIdAndUpdateSpy.mockRestore();
   });
 });
+
+describe("DELETE /patients", () => {
+  test("Deberia eliminar un paciente correctamente", async () => {
+    const patient = await Patient.findOne();
+    await request(app).delete(`/patients?id=${patient!._id}`).expect(200);
+  });
+
+  test("Deberia devolver error 400 si no se proporciona el ID del paciente", async () => {
+    await request(app).delete("/patients").expect(400);
+  });
+
+  test("Deberia devolver error 404 si el paciente a eliminar no existe", async () => {
+    const nonExistentId = new mongoose.Types.ObjectId();
+    await request(app).delete(`/patients?id=${nonExistentId}`).expect(404);
+  });
+
+  test("Deberia devolver error 500 si hay un fallo en la base de datos", async () => {
+    const findByIdAndDeleteSpy = vi.spyOn(Patient, 'findByIdAndDelete').mockRejectedValue(new Error('Fallo simulado en la BD'));
+    const patient = await Patient.findOne();
+    await request(app).delete(`/patients?id=${patient!._id}`).expect(500);
+    findByIdAndDeleteSpy.mockRestore();
+  });
+
+  test("Deberia dar error al hacer una petición a un ruta incorrecta", async () => {
+    const patient = await Patient.findOne();
+    await request(app).delete(`/p?id=${patient!._id}`).expect(501); // Ruta incorrecta
+  });
+});
+
+describe("DELETE /patients/:id", () => {
+  test("Debería eliminar un paciente correctamente usando la ruta con ID en el path", async () => {
+    const patient = await Patient.findOne();
+    await request(app).delete(`/patients/${patient!._id}`).expect(200);
+  }); 
+
+  test("Debería devolver error 404 al intentar eliminar un paciente que no existe", async () => {
+    const nonExistentId = new mongoose.Types.ObjectId(); 
+    await request(app).delete(`/patients/${nonExistentId}`).expect(404); 
+  });
+
+  test("Deberia devolver error 500 si hay un fallo en la base de datos", async () => {
+    const findByIdAndDeleteSpy = vi.spyOn(Patient, 'findByIdAndDelete').mockRejectedValue(new Error('Fallo simulado en la BD'));
+
+    const patient = await Patient.findOne();
+    await request(app).delete(`/patients/${patient!._id}`).expect(500);
+
+    findByIdAndDeleteSpy.mockRestore();
+  });
+});
