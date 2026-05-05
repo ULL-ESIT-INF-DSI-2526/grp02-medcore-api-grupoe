@@ -149,9 +149,16 @@ describe("GET /patients/:id", () => {
 
 describe("PATCH /patients", () => {
   test("Deberia actualizar un paciente correctamente", async () => {
-    const patient = await Patient.findOne();
     const response = await request(app)
-      .patch(`/patients?id=${patient!._id}`)
+      .patch(`/patients?idNumber=${firstPatient.idNumber}`)
+      .send({ fullName: "Juan Updated" })
+      .expect(200);
+    expect(response.body.fullName).toBe("Juan Updated");
+  });
+
+  test("Deberia actualizar un paciente correctamente usando el nombre completo como filtro", async () => {
+    const response = await request(app)
+      .patch(`/patients?fullName=${firstPatient.fullName}`)
       .send({ fullName: "Juan Updated" })
       .expect(200);
     expect(response.body.fullName).toBe("Juan Updated");
@@ -162,29 +169,27 @@ describe("PATCH /patients", () => {
   });
 
   test("Deberia devolver error 404 si el paciente a actualizar no existe", async () => {
-    const nonExistentId = new mongoose.Types.ObjectId();
     await request(app)
-      .patch(`/patients?id=${nonExistentId}`)
+      .patch(`/patients?idNumber=99999999Z`) // ID que no existe
       .send({ fullName: "Juan Updated" })
       .expect(404);
   });
 
   test("Deberia devolver error 500 si hay un fallo en la base de datos", async () => {
-    const findByIdAndUpdateSpy = vi.spyOn(Patient, 'findByIdAndUpdate').mockRejectedValue(new Error('Fallo simulado en la BD'));
+    const findOneAndUpdateSpy = vi.spyOn(Patient, 'findOneAndUpdate').mockRejectedValue(new Error('Fallo simulado en la BD'));
 
-    const patient = await Patient.findOne();
     await request(app)
-      .patch(`/patients?id=${patient!._id}`)
+      .patch(`/patients?idNumber=${firstPatient.idNumber}`)
       .send({ fullName: "Juan Updated" })
       .expect(500);
 
-    findByIdAndUpdateSpy.mockRestore();
+    findOneAndUpdateSpy.mockRestore();
   });
 
   test("Deberia dar error al hacer una petición a un ruta incorrecta", async () => {
     const patient = await Patient.findOne();
     await request(app)
-      .patch(`/p?id=${patient!._id}`)
+      .patch(`/p?idNumber=${firstPatient.idNumber}`)
       .send({ fullName: "Juan Updated" })
       .expect(501); // Ruta incorrecta
   });
@@ -224,8 +229,11 @@ describe("PATCH /patients/:id", () => {
 
 describe("DELETE /patients", () => {
   test("Deberia eliminar un paciente correctamente", async () => {
-    const patient = await Patient.findOne();
-    await request(app).delete(`/patients?id=${patient!._id}`).expect(200);
+    await request(app).delete(`/patients?idNumber=${firstPatient.idNumber}`).expect(200);
+  });
+
+  test("Deberia eliminar un paciente correctamente usando el nombre completo como filtro", async () => {
+    await request(app).delete(`/patients?fullName=${firstPatient.fullName}`).expect(200);
   });
 
   test("Deberia devolver error 400 si no se proporciona el ID del paciente", async () => {
@@ -234,19 +242,17 @@ describe("DELETE /patients", () => {
 
   test("Deberia devolver error 404 si el paciente a eliminar no existe", async () => {
     const nonExistentId = new mongoose.Types.ObjectId();
-    await request(app).delete(`/patients?id=${nonExistentId}`).expect(404);
+    await request(app).delete(`/patients?idNumber=99999999Z`).expect(404);
   });
 
   test("Deberia devolver error 500 si hay un fallo en la base de datos", async () => {
     const findByIdAndDeleteSpy = vi.spyOn(Patient, 'findByIdAndDelete').mockRejectedValue(new Error('Fallo simulado en la BD'));
-    const patient = await Patient.findOne();
-    await request(app).delete(`/patients?id=${patient!._id}`).expect(500);
+    await request(app).delete(`/patients?idNumber=${firstPatient.idNumber}`).expect(500);
     findByIdAndDeleteSpy.mockRestore();
   });
 
   test("Deberia dar error al hacer una petición a un ruta incorrecta", async () => {
-    const patient = await Patient.findOne();
-    await request(app).delete(`/p?id=${patient!._id}`).expect(501); // Ruta incorrecta
+    await request(app).delete(`/p?idNumber=${firstPatient.idNumber}`).expect(501); // Ruta incorrecta
   });
 });
 

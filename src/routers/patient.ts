@@ -4,8 +4,8 @@ import { Patient } from '../models/patient.js';
 export const patientRouter = express.Router();
 
 /**
- * Ruta POST para crear un nuevo paciente.
- * Recibe los datos del paciente en el cuerpo de la solicitud, crea una nueva instancia del modelo Patient y la guarda en la base de datos.
+ * Ruta POST para crear un nuevo paciente. Recibe los datos del paciente en el cuerpo de la solicitud, crea un nuevo paciente en la base de datos y devuelve el paciente creado.
+ * Maneja errores de validación y devuelve el código de estado adecuado.
  */
 patientRouter.post('/patients', async (req, res) => {
   const patient = new Patient(req.body);
@@ -19,22 +19,14 @@ patientRouter.post('/patients', async (req, res) => {
 });
 
 /**
- * Ruta GET para obtener pacientes. Permite filtrar por nombre completo, número de identificación o número de seguridad social a través de query parameters.
- * Si no se proporcionan filtros, devuelve todos los pacientes.
- * Maneja errores de base de datos y devuelve el código de estado adecuado.
+ * Ruta GET para obtener pacientes. Permite filtrar pacientes por nombre completo o número de identificación a través de query parameters.
+ * Si no se proporcionan filtros, devuelve todos los pacientes. Maneja errores de base de datos y devuelve el código de estado adecuado.
  */
 patientRouter.get('/patients', async (req, res) => {
   const filter: any = {};
 
-  if (req.query.fullName) {
-    filter.fullName = req.query.fullName;
-  }
-  if (req.query.idNumber) {
-    filter.idNumber = req.query.idNumber;
-  }
-  if (req.query.socialSecurityNumber) {
-    filter.socialSecurityNumber = req.query.socialSecurityNumber;
-  }
+  if (req.query.fullName) filter.fullName = req.query.fullName;
+  if (req.query.idNumber) filter.idNumber = req.query.idNumber;
 
   try {
     const patients = await Patient.find(filter);
@@ -49,10 +41,8 @@ patientRouter.get('/patients', async (req, res) => {
  * Si el paciente no existe, devuelve un error 404. Maneja errores de base de datos y devuelve el código de estado adecuado.
  */
 patientRouter.get('/patients/:id', async (req, res) => {
-  const id = req.params.id;
-
   try {
-    const patient = await Patient.findById(id);
+    const patient = await Patient.findById(req.params.id);
     if (!patient) {
       return res.status(404).send({ message: 'Paciente no encontrado' });
     }
@@ -63,20 +53,22 @@ patientRouter.get('/patients/:id', async (req, res) => {
 });
 
 /**
- * Ruta PATCH para actualizar un paciente. Recibe el ID del paciente como query parameter o como parámetro en la URL, y los datos a actualizar en el cuerpo de la solicitud.
- * Busca el paciente en la base de datos, lo actualiza con los nuevos datos y devuelve el paciente actualizado.
- * Si el paciente no existe, devuelve un error 404. Si no se proporciona el ID del paciente, devuelve un error 400. Maneja errores de base de datos y devuelve el código de estado adecuado.
+ * Ruta PATCH para actualizar un paciente utilizando filtros en query parameters. Permite actualizar un paciente filtrando por nombre completo o número de identificación a través de query parameters.
+ * Si no se proporcionan filtros, devuelve un error 400. Si el paciente no existe, devuelve un error 404. Maneja errores de base de datos y devuelve el código de estado adecuado.
  */
-patientRouter.patch('/patients/', async (req, res) => {
-  if (!req.query.id) {
-    return res.status(400).send({ message: 'ID del paciente es requerido' });
+patientRouter.patch('/patients', async (req, res) => {
+  if (!req.query.idNumber && !req.query.fullName) {
+    return res.status(400).send({ message: 'Se requiere idNumber o fullName para actualizar' });
   }
 
-  const id = req.query.id as string;
+  const filter: any = {};
+  if (req.query.idNumber) filter.idNumber = req.query.idNumber as string;
+  if (req.query.fullName) filter.fullName = req.query.fullName as string;
+
   const updateData = req.body;
 
   try {
-    const patient = await Patient.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
+    const patient = await Patient.findOneAndUpdate(filter, updateData, { new: true, runValidators: true });
     if (!patient) {
       return res.status(404).send({ message: 'Paciente no encontrado' });
     }
@@ -92,36 +84,41 @@ patientRouter.patch('/patients/', async (req, res) => {
  * Si el paciente no existe, devuelve un error 404. Maneja errores de base de datos y devuelve el código de estado adecuado.
  */
 patientRouter.patch('/patients/:id', async (req, res) => {
-  const id = req.params.id;
   const updateData = req.body;
 
   try {
-    const patient = await Patient.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
+    const patient = await Patient.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
     if (!patient) {
       return res.status(404).send({ message: 'Paciente no encontrado' });
     }
     res.status(200).send(patient);
   } catch (error) {
-    res.status(500).send(error);
+    res.status(4500).send(error);
   }
 });
 
 /**
- * Ruta DELETE para eliminar un paciente. Recibe el ID del paciente como query parameter o como parámetro en la URL, busca el paciente en la base de datos y lo elimina.
- * Si el paciente no existe, devuelve un error 404. Si no se proporciona el ID del paciente, devuelve un error 400. Maneja errores de base de datos y devuelve el código de estado adecuado.
+ * Ruta DELETE para eliminar un paciente utilizando filtros en query parameters. Permite eliminar un paciente filtrando por nombre completo o número de identificación a través de query parameters.
+ * Si no se proporcionan filtros, devuelve un error 400. Si el paciente no existe, devuelve un error 404. Maneja errores de base de datos y devuelve el código de estado adecuado.
  */
-patientRouter.delete('/patients/', async (req, res) => {
-  if (!req.query.id) {
-    return res.status(400).send({ message: 'ID del paciente es requerido' });
+patientRouter.delete('/patients', async (req, res) => {
+  if (!req.query.idNumber && !req.query.fullName) {
+    return res.status(400).send({ message: 'Se requiere idNumber o fullName para borrar' });
   }
 
-  const id = req.query.id as string;
+  const filter: any = {};
+  if (req.query.idNumber) filter.idNumber = req.query.idNumber as string;
+  if (req.query.fullName) filter.fullName = req.query.fullName as string;
 
   try {
-    const patient = await Patient.findByIdAndDelete(id);
+    const patient = await Patient.findOne(filter);
     if (!patient) {
       return res.status(404).send({ message: 'Paciente no encontrado' });
     }
+
+    // Faltaría añadir la lógica de borrado cuando tengamos lo de los registros médicos
+
+    await Patient.findByIdAndDelete(patient._id);
     res.status(200).send({ message: 'Paciente eliminado correctamente' });
   } catch (error) {
     res.status(500).send(error);
@@ -133,13 +130,15 @@ patientRouter.delete('/patients/', async (req, res) => {
  * Si el paciente no existe, devuelve un error 404. Maneja errores de base de datos y devuelve el código de estado adecuado.
  */
 patientRouter.delete('/patients/:id', async (req, res) => {
-  const id = req.params.id;
-
   try {
-    const patient = await Patient.findByIdAndDelete(id);
+    const patient = await Patient.findById(req.params.id);
     if (!patient) {
       return res.status(404).send({ message: 'Paciente no encontrado' });
     }
+
+  // Faltaría añadir la lógica de borrado cuando tengamos lo de los registros médicos
+
+    await Patient.findByIdAndDelete(req.params.id);
     res.status(200).send({ message: 'Paciente eliminado correctamente' });
   } catch (error) {
     res.status(500).send(error);
