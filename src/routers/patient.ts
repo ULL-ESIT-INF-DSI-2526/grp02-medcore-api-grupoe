@@ -18,6 +18,11 @@ patientRouter.post('/patients', async (req, res) => {
   }
 });
 
+/**
+ * Ruta GET para obtener pacientes. Permite filtrar por nombre completo, número de identificación o número de seguridad social a través de query parameters.
+ * Si no se proporcionan filtros, devuelve todos los pacientes.
+ * Maneja errores de base de datos y devuelve el código de estado adecuado.
+ */
 patientRouter.get('/patients', async (req, res) => {
   const filter: any = {};
 
@@ -39,11 +44,59 @@ patientRouter.get('/patients', async (req, res) => {
   }
 });
 
+/**
+ * Ruta GET para obtener un paciente por su ID. Recibe el ID del paciente como parámetro en la URL, busca el paciente en la base de datos y lo devuelve.
+ * Si el paciente no existe, devuelve un error 404. Maneja errores de base de datos y devuelve el código de estado adecuado.
+ */
 patientRouter.get('/patients/:id', async (req, res) => {
   const id = req.params.id;
 
   try {
     const patient = await Patient.findById(id);
+    if (!patient) {
+      return res.status(404).send({ message: 'Paciente no encontrado' });
+    }
+    res.status(200).send(patient);
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});
+
+/**
+ * Ruta PATCH para actualizar un paciente. Recibe el ID del paciente como query parameter o como parámetro en la URL, y los datos a actualizar en el cuerpo de la solicitud.
+ * Busca el paciente en la base de datos, lo actualiza con los nuevos datos y devuelve el paciente actualizado.
+ * Si el paciente no existe, devuelve un error 404. Si no se proporciona el ID del paciente, devuelve un error 400. Maneja errores de base de datos y devuelve el código de estado adecuado.
+ */
+patientRouter.patch('/patients/', async (req, res) => {
+  if (!req.query.id) {
+    return res.status(400).send({ message: 'ID del paciente es requerido' });
+  }
+
+  const id = req.query.id as string;
+  const updateData = req.body;
+
+  try {
+    const patient = await Patient.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
+    if (!patient) {
+      return res.status(404).send({ message: 'Paciente no encontrado' });
+    }
+    res.status(200).send(patient);
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});
+
+/**
+ * Ruta PATCH para actualizar un paciente utilizando el ID como parámetro en la URL. Recibe el ID del paciente como parámetro en la URL, y los datos a actualizar en el cuerpo de la solicitud.
+ * Busca el paciente en la base de datos, lo actualiza con los nuevos datos y devuelve el paciente actualizado.
+ * Si el paciente no existe, devuelve un error 404. Maneja errores de base de datos y devuelve el código de estado adecuado.
+ */
+patientRouter.patch('/patients/:id', async (req, res) => {
+  const id = req.params.id;
+  const updateData = req.body;
+
+  try {
+    const patient = await Patient.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
     if (!patient) {
       return res.status(404).send({ message: 'Paciente no encontrado' });
     }

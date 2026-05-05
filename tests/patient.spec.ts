@@ -146,3 +146,78 @@ describe("GET /patients/:id", () => {
     await request(app).get(`/p/${patient!._id}`).expect(501); // Ruta incorrecta
   });
 });
+
+describe("PATCH /patients", () => {
+  test("Deberia actualizar un paciente correctamente", async () => {
+    const patient = await Patient.findOne();
+    const response = await request(app)
+      .patch(`/patients?id=${patient!._id}`)
+      .send({ fullName: "Juan Updated" })
+      .expect(200);
+    expect(response.body.fullName).toBe("Juan Updated");
+  });
+
+  test("Deberia devolver error 400 si no se proporciona el ID del paciente", async () => {
+    await request(app).patch("/patients").send({ fullName: "Juan Updated" }).expect(400);
+  });
+
+  test("Deberia devolver error 404 si el paciente a actualizar no existe", async () => {
+    const nonExistentId = new mongoose.Types.ObjectId();
+    await request(app)
+      .patch(`/patients?id=${nonExistentId}`)
+      .send({ fullName: "Juan Updated" })
+      .expect(404);
+  });
+
+  test("Deberia devolver error 500 si hay un fallo en la base de datos", async () => {
+    const findByIdAndUpdateSpy = vi.spyOn(Patient, 'findByIdAndUpdate').mockRejectedValue(new Error('Fallo simulado en la BD'));
+
+    const patient = await Patient.findOne();
+    await request(app)
+      .patch(`/patients?id=${patient!._id}`)
+      .send({ fullName: "Juan Updated" })
+      .expect(500);
+
+    findByIdAndUpdateSpy.mockRestore();
+  });
+
+  test("Deberia dar error al hacer una petición a un ruta incorrecta", async () => {
+    const patient = await Patient.findOne();
+    await request(app)
+      .patch(`/p?id=${patient!._id}`)
+      .send({ fullName: "Juan Updated" })
+      .expect(501); // Ruta incorrecta
+  });
+});
+
+describe("PATCH /patients/:id", () => {
+  test("Debería actualizar un paciente correctamente usando la ruta con ID en el path", async () => {
+    const patient = await Patient.findOne();
+    const response = await request(app)
+      .patch(`/patients/${patient!._id}`)
+      .send({ fullName: "Juan Updated" })
+      .expect(200);
+    expect(response.body.fullName).toBe("Juan Updated");
+  });
+
+  test("Debería devolver error 404 al intentar actualizar un paciente que no existe", async () => {
+    const nonExistentId = new mongoose.Types.ObjectId(); 
+    
+    await request(app)
+      .patch(`/patients/${nonExistentId}`)
+      .send({ fullName: "Juan Updated" })
+      .expect(404); 
+  });
+
+  test("Deberia devolver error 500 si hay un fallo en la base de datos", async () => {
+    const findByIdAndUpdateSpy = vi.spyOn(Patient, 'findByIdAndUpdate').mockRejectedValue(new Error('Fallo simulado en la BD'));
+
+    const patient = await Patient.findOne();
+    await request(app)
+      .patch(`/patients/${patient!._id}`)
+      .send({ fullName: "Juan Updated" })
+      .expect(500);
+
+    findByIdAndUpdateSpy.mockRestore();
+  });
+});
