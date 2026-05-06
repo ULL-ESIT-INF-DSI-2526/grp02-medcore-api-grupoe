@@ -152,3 +152,34 @@ staffRouter.patch("/staff/:id", async (req, res) => {
     }
   }
 });
+
+/**
+ * Ruta DELETE para eliminar un personal utilizando filtros en query parameters. Permite eliminar un personal filtrando por nombre completo o especialidad a través de query parameters.
+ * Si no se proporcionan filtros, devuelve un error 400. Si el personal no existe, devuelve un error 404. Maneja errores de base de datos y devuelve el código de estado adecuado.
+ */
+staffRouter.delete("/staff", async (req, res) => {
+  if (!req.query.fullName && !req.query.specialty) {
+    res.status(400).send({
+      error: "A fullName or specialty must be provided",
+    });
+  } else {
+    try {
+      const filter = req.query.fullName
+        ? { fullName: req.query.fullName.toString() }
+        : { specialty: req.query.specialty!.toString() };
+
+      const personal = await Staff.findOne(filter);
+
+      if (!personal) {
+        res.status(404).send({
+          error: "Staff not found",
+        });
+      } else {
+        await Staff.findByIdAndDelete(personal._id);
+        res.send(personal);
+      }
+    } catch (error) {
+      res.status(500).send(error);
+    }
+  }
+});

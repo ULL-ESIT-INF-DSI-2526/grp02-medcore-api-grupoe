@@ -237,3 +237,33 @@ describe("PATCH /staff/:id", () => {
       .expect(400); // Parámetro no permitido 
   });
 });
+
+
+describe("DELETE /staff", () => {
+  test("Deberia eliminar un personal correctamente", async () => {
+    await request(app).delete(`/staff?fullName=${firstStaff.fullName}`).expect(200);
+  });
+
+  test("Deberia eliminar un personal correctamente usando el nombre completo como filtro", async () => {
+    await request(app).delete(`/staff?fullName=${firstStaff.fullName}`).expect(200);
+  });
+
+  test("Deberia devolver error 400 si no se proporciona el ID del personal", async () => {
+    await request(app).delete("/staff").expect(400);
+  });
+
+  test("Deberia devolver error 404 si el personal a eliminar no existe", async () => {
+    await request(app).delete(`/staff?fullName=NonExistent`).expect(404);
+  });
+
+  test("Deberia devolver error 500 si hay un fallo en la base de datos", async () => {
+    const findByIdAndDeleteSpy = vi.spyOn(Staff, 'findByIdAndDelete').mockRejectedValue(new Error('Fallo simulado en la BD'));
+    await request(app).delete(`/staff?fullName=${firstStaff.fullName}`).expect(500);
+    findByIdAndDeleteSpy.mockRestore();
+  });
+
+  test("Deberia dar error al hacer una petición a un ruta incorrecta", async () => {
+    await request(app).delete(`/p?fullName=${firstStaff.fullName}`).expect(501); // Ruta incorrecta
+  });
+});
+
