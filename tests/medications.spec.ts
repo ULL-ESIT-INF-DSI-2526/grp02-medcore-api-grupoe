@@ -156,3 +156,83 @@ describe("POST /medications", () => {
       .expect(400);
   });
 });
+
+describe("GET /medications", () => {
+  test("Debería obtener todos los medicamentos sin filtros", async () => {
+    const response = await request(app)
+      .get("/medications")
+      .expect(200);
+    expect(response.body.length).toBe(1);
+    expect(response.body[0].commercialName).toBe("Ibuprofeno");
+  });
+
+  test("Debería filtrar medicamentos por nombre comercial", async () => {
+    const response = await request(app)
+      .get("/medications?commercialName=Ibuprofeno")
+      .expect(200);
+    expect(response.body.length).toBe(1);
+    expect(response.body[0].commercialName).toBe("Ibuprofeno");
+  });
+  test("Debería filtrar medicamentos por principio activo", async () => {
+    const response = await request(app)
+      .get("/medications?activeIngredient=IbuprofenoActivo")
+      .expect(200);
+    expect(response.body.length).toBe(1);
+    expect(response.body[0].activeIngredient).toBe("IbuprofenoActivo");
+  });
+
+  test("Debería filtrar medicamentos por código nacional", async () => {
+    const response = await request(app)
+      .get("/medications?nationalCode=123456ABC")
+      .expect(200);
+    expect(response.body.length).toBe(1);
+    expect(response.body[0].nationalCode).toBe("123456ABC");
+  });
+
+  test("Debería devolver 404 si no se encuentran medicamentos con los filtros", async () => {
+    const response = await request(app)
+      .get("/medications?commercialName=MedicamentoInexistente")
+      .expect(404);
+    expect(response.body.error).toBe('No se encontraron medicamentos');
+  });
+
+  test("Debería manejar errores de base de datos y devolver 500", async () => {
+    const spy = vi.spyOn(Medications, 'find').mockRejectedValue(new Error('Database error'));
+    const response = await request(app)
+      .get("/medications")
+      .expect(500);
+    spy.mockRestore();
+  });
+});
+describe("GET /medications/:id", () => {
+  test("Debería obtener un medicamento por su ID", async () => {
+    const medication = await Medications.findOne({ commercialName: "Ibuprofeno" });
+    const response = await request(app)
+      .get(`/medications/${medication!._id}`)
+      .expect(200);
+    expect(response.body.commercialName).toBe("Ibuprofeno");
+  });
+
+  test("Debería devolver 404 si el medicamento no existe", async () => {
+    const nonExistentId = new mongoose.Types.ObjectId();
+    const response = await request(app)
+      .get(`/medications/${nonExistentId}`)
+      .expect(404);
+    expect(response.body.message).toBe('Medicamento no encontrado');
+  });
+
+  test("Debería manejar errores de base de datos y devolver 500", async () => {
+    const medication = await Medications.findOne({ commercialName: "Ibuprofeno" });
+    const spy = vi.spyOn(Medications, 'findById').mockRejectedValue(new Error('Database error'));
+    const response = await request(app)
+      .get(`/medications/${medication!._id}`)
+      .expect(500);
+    spy.mockRestore();
+  });
+
+  test("Error al obtener un medicamento con ruta inválida", async () => {
+    const response = await request(app)
+      .get("/medications/invalid-id")
+      .expect(500);
+  });
+});
