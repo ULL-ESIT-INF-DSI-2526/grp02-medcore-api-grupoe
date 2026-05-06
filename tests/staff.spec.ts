@@ -267,3 +267,25 @@ describe("DELETE /staff", () => {
   });
 });
 
+
+describe("DELETE /staff/:id", () => {
+  test("Debería eliminar un personal correctamente usando la ruta con ID en el path", async () => {
+    const personal = await Staff.findOne();
+    await request(app).delete(`/staff/${personal!._id}`).expect(200);
+  });
+
+  test("Debería devolver error 404 al intentar eliminar un personal que no existe", async () => {
+    const nonExistentId = new mongoose.Types.ObjectId(); 
+    await request(app).delete(`/staff/${nonExistentId}`).expect(404); 
+  });
+
+  test("Deberia devolver error 500 si hay un fallo en la base de datos", async () => {
+    const findByIdAndDeleteSpy = vi.spyOn(Staff, 'findByIdAndDelete').mockRejectedValue(new Error('Fallo simulado en la BD'));
+
+    const personal = await Staff.findOne();
+    await request(app).delete(`/staff/${personal!._id}`).expect(500);
+
+    findByIdAndDeleteSpy.mockRestore();
+  });
+});
+

@@ -183,3 +183,25 @@ staffRouter.delete("/staff", async (req, res) => {
     }
   }
 });
+
+/**
+ * Ruta DELETE para eliminar un personal utilizando el ID como parámetro en la URL. Recibe el ID del personal como parámetro en la URL, busca el personal en la base de datos y lo elimina.
+ * Si el personal no existe, devuelve un error 404. Maneja errores de base de datos y devuelve el código de estado adecuado.
+ */
+staffRouter.delete("/staff/:id", async (req, res) => {
+  try {
+    const personal = await Staff.findById(req.params.id);
+
+    if (!personal) {
+      res.status(404).send({
+        error: "Staff not found",
+      });
+    } else {
+      // Faltaría añadir la lógica de borrado cuando tengamos lo de los registros médicos
+      await Staff.findByIdAndDelete(personal._id);
+      res.send(personal);
+    }
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});
