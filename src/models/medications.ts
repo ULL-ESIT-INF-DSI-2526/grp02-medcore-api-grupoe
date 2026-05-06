@@ -75,10 +75,15 @@ const MedicationsSchema = new Schema<MedicationsDocumentInterface>({
   expirationDate: {
     type: Date,
     required: true,
+    validate(value: Date) {
+      if (value < new Date()) {
+        throw new Error('La fecha de expiración no puede ser en el pasado');
+      }
+    }
   },
   contraindications: {
     type: [String],
   }
 });
 
-export const MedicationsModel = model<MedicationsDocumentInterface>('Medications', MedicationsSchema);
+export const Medications = model<MedicationsDocumentInterface>('Medications', MedicationsSchema);
