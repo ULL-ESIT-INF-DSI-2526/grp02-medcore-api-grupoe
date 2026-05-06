@@ -303,3 +303,33 @@ describe("PATCH /medications", () => {
         expect(response.body.message).toBe('Se requiere nationalCode o commercialName o activeIngredient para actualizar');
     });
 });
+
+describe("PATCH /medications/:id", () => {
+    test("Debería actualizar un medicamento por su ID", async () => {
+        const medication = await Medications.findOne({ commercialName: "Ibuprofeno" });
+        const response = await request(app)
+        .patch(`/medications/${medication!._id}`)
+        .send({ stock: 160 })
+        .expect(200);
+        expect(response.body.stock).toBe(160);
+    });
+
+    test("Debería devolver 404 si el medicamento no existe", async () => {
+        const nonExistentId = new mongoose.Types.ObjectId();
+        const response = await request(app)
+        .patch(`/medications/${nonExistentId}`)
+        .send({ stock: 150 })
+        .expect(404);
+        expect(response.body.message).toBe('Medicamento no encontrado');
+    });
+
+    test("Debería manejar errores de base de datos y devolver 500", async () => {
+        const medication = await Medications.findOne({ commercialName: "Ibuprofeno" });
+        const spy = vi.spyOn(Medications, 'findByIdAndUpdate').mockRejectedValue(new Error('Database error'));
+        const response = await request(app)
+        .patch(`/medications/${medication!._id}`)
+        .send({ stock: 150 })
+        .expect(500);
+        spy.mockRestore();
+    });
+});

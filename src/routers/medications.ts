@@ -85,3 +85,17 @@ medicationsRouter.patch("/medications", async (req, res) => {
     res.status(500).send({ error : 'Error al actualizar el medicamento' });
   }
 });
+
+medicationsRouter.patch("/medications/:id", async (req, res) => {
+  const updateData = req.body;
+
+  try {
+    const medication = await Medications.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
+    if (!medication) {
+      return res.status(404).send({ message: 'Medicamento no encontrado' });
+    }
+    res.status(200).send(medication);
+  } catch (error) {
+    res.status(500).send({ error : 'Error al actualizar el medicamento' });
+  }
+});
