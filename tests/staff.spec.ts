@@ -115,3 +115,30 @@ describe("GET /staff", () => {
   });
 });
 
+
+describe("GET /staff/:id", () => {
+  test("Deberia obtener un miembro del personal por su ID correctamente", async () => {
+    const personal = await Staff.findOne();
+    const response = await request(app).get(`/staff/${personal!._id}`).expect(200);
+    expect(response.body.fullName).toBe(firstStaff.fullName);
+  });
+
+  test("Deberia devolver error 404 si el miembro del personal no existe", async () => {
+    const nonExistentId = new mongoose.Types.ObjectId();
+    await request(app).get(`/staff/${nonExistentId}`).expect(404);
+  });
+
+  test("Deberia devolver error 500 si hay un fallo en la base de datos", async () => {
+    const findByIdSpy = vi.spyOn(Staff, 'findById').mockRejectedValue(new Error('Fallo simulado en la BD'));
+
+    const dummyId = new mongoose.Types.ObjectId();
+    await request(app).get(`/staff/${dummyId}`).expect(500);
+
+    findByIdSpy.mockRestore();
+  });
+
+  test("Deberia dar error al hacer una petición a un ruta incorrecta", async () => {
+    const personal = await Staff.findOne();
+    await request(app).get(`/s/${personal!._id}`).expect(501); // Ruta incorrecta
+  });
+});

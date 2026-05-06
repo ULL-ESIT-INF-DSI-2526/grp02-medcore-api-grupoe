@@ -44,3 +44,22 @@ staffRouter.get("/staff", async (req, res) => {
   }
 });
 
+/**
+ * Ruta GET para obtener un miembro del personal médico por su ID. Recibe el ID del miembro como parámetro en la URL, busca el miembro en la base de datos y lo devuelve.
+ * Si el miembro no existe, devuelve un error 404. Maneja errores de base de datos y devuelve el código de estado adecuado.
+ */
+staffRouter.get("/staff/:id", async (req, res) => {
+  try {
+    const personal = await Staff.findById(req.params.id);
+
+    if (personal) {
+      res.send(personal);
+    } else {
+      res.status(404).send({
+        error: "Staff not found",
+      });
+    }
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});
