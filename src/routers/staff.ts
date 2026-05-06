@@ -63,3 +63,52 @@ staffRouter.get("/staff/:id", async (req, res) => {
     res.status(500).send(error);
   }
 });
+
+/**
+ * Ruta PATCH para actualizar un personal utilizando filtros en query parameters. Permite actualizar un personal filtrando por nombre completo o especialidad a través de query parameters.
+ * Si no se proporcionan filtros, devuelve un error 400. Si el personal no existe, devuelve un error 404. Maneja errores de base de datos y devuelve el código de estado adecuado.
+ */
+staffRouter.patch("/staff", async (req, res) => {
+  if (!req.query.fullName && !req.query.specialty) {
+    res.status(400).send({
+      error: "A fullName or specialty must be provided",
+    });
+  } else {
+    const allowedUpdates = ["fullName", "collegiateNumber", "specialty", "category", "shift", "roomNumber", "experienceYears", "contact", "status"];
+    const actualUpdates = Object.keys(req.body);
+    const isValidUpdate = actualUpdates.every((update) =>
+      allowedUpdates.includes(update),
+    );
+
+    if (!isValidUpdate) {
+      res.status(400).send({
+        error: "Update is not allowed",
+      });
+    } else {
+      try {
+        const filter = req.query.fullName
+          ? { fullName: req.query.fullName.toString() }
+          : { specialty: req.query.specialty!.toString() };
+
+        const personal = await Staff.findOneAndUpdate(
+          filter,
+          req.body,
+          {
+            returnDocument: "after",
+            runValidators: true,
+          },
+        );
+
+        if (personal) {
+          res.send(personal);
+        } else {
+          res.status(404).send({
+            error: "Staff not found",
+          });
+        }
+      } catch (error) {
+        res.status(500).send(error);
+      }
+    }
+  }
+});

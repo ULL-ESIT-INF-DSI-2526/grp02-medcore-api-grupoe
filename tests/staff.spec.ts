@@ -142,3 +142,58 @@ describe("GET /staff/:id", () => {
     await request(app).get(`/s/${personal!._id}`).expect(501); // Ruta incorrecta
   });
 });
+
+
+describe("PATCH /staff", () => {
+  test("Deberia actualizar un personal correctamente", async () => {
+    const response = await request(app)
+      .patch(`/staff?fullName=${firstStaff.fullName}`)
+      .send({ fullName: "Juan Updated" })
+      .expect(200);
+    expect(response.body.fullName).toBe("Juan Updated");
+  });
+
+  test("Deberia actualizar un personal correctamente usando el nombre completo como filtro", async () => {
+    const response = await request(app)
+      .patch(`/staff?fullName=${firstStaff.fullName}`)
+      .send({ fullName: "Juan Updated" })
+      .expect(200);
+    expect(response.body.fullName).toBe("Juan Updated");
+  });
+
+  test("Deberia devolver error 400 si no se proporciona el ID del personal", async () => {
+    await request(app).patch("/staff").send({ fullName: "Juan Updated" }).expect(400);
+  });
+
+  test("Deberia devolver error 404 si el personal a actualizar no existe", async () => {
+    await request(app)
+      .patch(`/staff?fullName=NoExiste`)
+      .send({ fullName: "Juan Updated" })
+      .expect(404);
+  });
+
+  test("Deberia devolver error 500 si hay un fallo en la base de datos", async () => {
+    const findOneAndUpdateSpy = vi.spyOn(Staff, 'findOneAndUpdate').mockRejectedValue(new Error('Fallo simulado en la BD'));
+
+    await request(app)
+      .patch(`/staff?fullName=${firstStaff.fullName}`)
+      .send({ fullName: "Juan Updated" })
+      .expect(500);
+
+    findOneAndUpdateSpy.mockRestore();
+  });
+
+  test("Deberia dar error al hacer una petición a un ruta incorrecta", async () => {
+    await request(app)
+      .patch(`/p?fullName=${firstStaff.fullName}`)
+      .send({ fullName: "Juan Updated" })
+      .expect(501); // Ruta incorrecta
+  });
+
+  test("Deberia dar un error al actualizar un parametro no permitido", async () => {
+    await request(app)
+      .patch(`/staff?fullName=${firstStaff.fullName}`)
+      .send({ fullName: "Juan Updated", invalidParam: "no permitido" })
+      .expect(400); // Parámetro no permitido
+  });
+});

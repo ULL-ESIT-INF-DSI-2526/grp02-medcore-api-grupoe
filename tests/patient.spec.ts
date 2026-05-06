@@ -187,7 +187,6 @@ describe("PATCH /patients", () => {
   });
 
   test("Deberia dar error al hacer una petición a un ruta incorrecta", async () => {
-    const patient = await Patient.findOne();
     await request(app)
       .patch(`/p?idNumber=${firstPatient.idNumber}`)
       .send({ fullName: "Juan Updated" })
