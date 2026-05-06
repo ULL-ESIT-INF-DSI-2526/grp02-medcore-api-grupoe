@@ -197,3 +197,43 @@ describe("PATCH /staff", () => {
       .expect(400); // Parámetro no permitido
   });
 });
+
+describe("PATCH /staff/:id", () => {
+  test("Debería actualizar un miembro del personal correctamente usando la ruta con ID en el path", async () => {
+    const personal = await Staff.findOne();
+    const response = await request(app)
+      .patch(`/staff/${personal!._id}`)
+      .send({ fullName: "Juan Updated" })
+      .expect(200);
+    expect(response.body.fullName).toBe("Juan Updated");
+  });
+
+  test("Debería devolver error 404 al intentar actualizar un miembro del personal que no existe", async () => {
+    const nonExistentId = new mongoose.Types.ObjectId(); 
+    
+    await request(app)
+      .patch(`/staff/${nonExistentId}`)
+      .send({ fullName: "Juan Updated" })
+      .expect(404); 
+  });
+
+  test("Deberia devolver error 500 si hay un fallo en la base de datos", async () => {
+    const findByIdAndUpdateSpy = vi.spyOn(Staff, 'findByIdAndUpdate').mockRejectedValue(new Error('Fallo simulado en la BD'));
+
+    const personal = await Staff.findOne();
+    await request(app)
+      .patch(`/staff/${personal!._id}`)
+      .send({ fullName: "Juan Updated" })
+      .expect(500);
+
+    findByIdAndUpdateSpy.mockRestore();
+  });
+
+  test("Deberia dar error al hacer un update con un parametro no permitido", async () => {
+    const personal = await Staff.findOne();
+    await request(app)
+      .patch(`/staff/${personal!._id}`)
+      .send({ fullName: "Juan Updated", invalidParam: "no permitido" })
+      .expect(400); // Parámetro no permitido 
+  });
+});

@@ -112,3 +112,43 @@ staffRouter.patch("/staff", async (req, res) => {
     }
   }
 });
+
+/**
+ * Ruta PATCH para actualizar un miembro del personal utilizando el ID como parámetro en la URL. Recibe el ID del miembro como parámetro en la URL, y los datos a actualizar en el cuerpo de la solicitud.
+ * Busca el miembro en la base de datos, lo actualiza con los nuevos datos y devuelve el miembro actualizado.
+ * Si el miembro no existe, devuelve un error 404. Maneja errores de base de datos y devuelve el código de estado adecuado.
+ */
+staffRouter.patch("/staff/:id", async (req, res) => {
+  const allowedUpdates = ["fullName", "collegiateNumber", "specialty", "category", "shift", "roomNumber", "experienceYears", "contact", "status"];
+  const actualUpdates = Object.keys(req.body);
+  const isValidUpdate = actualUpdates.every((update) =>
+    allowedUpdates.includes(update),
+  );
+
+  if (!isValidUpdate) {
+    res.status(400).send({
+      error: "Update is not allowed",
+    });
+  } else {
+    try {
+      const personal = await Staff.findByIdAndUpdate(
+        req.params.id,
+        req.body,
+        {
+          returnDocument: "after",
+          runValidators: true,
+        },
+      );
+
+      if (personal) {
+        res.send(personal);
+      } else {
+        res.status(404).send({
+          error: "Staff not found",
+        });
+      }
+    } catch (error) {
+      res.status(500).send(error);
+    }
+  }
+});
