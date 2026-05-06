@@ -93,7 +93,7 @@ patientRouter.patch('/patients/:id', async (req, res) => {
     }
     res.status(200).send(patient);
   } catch (error) {
-    res.status(4500).send(error);
+    res.status(500).send(error);
   }
 });
 
