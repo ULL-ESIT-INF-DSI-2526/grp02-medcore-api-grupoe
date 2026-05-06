@@ -79,3 +79,39 @@ describe("POST /staff", () => {
   });
 });
 
+describe("GET /staff", () => {
+  test("Deberia obtener la lista de personal correctamente", async () => {
+    const response = await request(app).get("/staff").expect(200);
+    expect(response.body.length).toBe(1);
+    expect(response.body[0].fullName).toBe(firstStaff.fullName);
+  });
+
+  test("Deberia filtrar personal por nombre completo", async () => {
+    const response = await request(app).get("/staff?fullName=Dr. Juan Pérez").expect(200);
+    expect(response.body.length).toBe(1);
+    expect(response.body[0].fullName).toBe(firstStaff.fullName);
+  });
+
+  test("Deberia devolver 404 si no se encuentra personal con el filtro", async () => {
+    await request(app).get("/staff?fullName=NoExiste").expect(404);
+  });
+
+  test("Deberia filtrar personal por especialidad", async () => {
+    const response = await request(app).get("/staff?specialty=medicina general").expect(200);
+    expect(response.body.length).toBe(1);
+    expect(response.body[0].specialty).toBe(firstStaff.specialty);
+  });
+
+  test("Deberia devolver error 500 si hay un fallo en la base de datos", async () => {
+    const findSpy = vi.spyOn(Staff, 'find').mockRejectedValue(new Error('Fallo simulado en la BD'));
+
+    await request(app).get("/staff").expect(500);
+
+    findSpy.mockRestore();
+  });
+
+  test("Deberia dar error al hacer una petición a un ruta incorrecta", async () => {
+    await request(app).get("/p").expect(501); // Ruta incorrecta
+  });
+});
+
