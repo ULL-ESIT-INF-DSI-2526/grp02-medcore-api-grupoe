@@ -386,3 +386,29 @@ describe("DELETE /medications", () => {
     });
 });
 
+describe("DELETE /medications/:id", () => {
+    test("Debería eliminar un medicamento por su ID", async () => {
+        const medication = await Medications.findOne({ commercialName: "Ibuprofeno" });
+        const response = await request(app)
+        .delete(`/medications/${medication!._id}`)
+        .expect(200);
+        expect(response.body.commercialName).toBe("Ibuprofeno");
+    });
+
+    test("Debería devolver 404 si el medicamento no existe", async () => {
+        const nonExistentId = new mongoose.Types.ObjectId();
+        const response = await request(app)
+        .delete(`/medications/${nonExistentId}`)
+        .expect(404);
+        expect(response.body.message).toBe('Medicamento no encontrado');
+    });
+
+    test("Debería manejar errores de base de datos y devolver 500", async () => {
+        const medication = await Medications.findOne({ commercialName: "Ibuprofeno" });
+        const spy = vi.spyOn(Medications, 'findByIdAndDelete').mockRejectedValue(new Error('Database error'));
+        const response = await request(app)
+        .delete(`/medications/${medication!._id}`)
+        .expect(500);
+        spy.mockRestore();
+    });
+});

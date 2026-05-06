@@ -116,11 +116,25 @@ medicationsRouter.delete("/medications", async (req, res) => {
     if (!medication) {
       return res.status(404).send({ message: 'Medicamento no encontrado' });
     } else {
-      // Falta logica de borrado
       await Medications.findByIdAndDelete(medication._id);
       res.status(200).send(medication);
     }
   } catch (error) {
     res.status(500).send({ error : 'Error al eliminar el medicamento' });
   }
+});
+
+medicationsRouter.delete("/medications/:id", async (req, res) => {
+    try {
+        const medication = await Medications.findById(req.params.id);
+        if (!medication) {
+          return res.status(404).send({ message: 'Medicamento no encontrado' });
+        } else {
+          // Falta logica de borrado
+          await Medications.findByIdAndDelete(medication._id);
+          res.status(200).send(medication);
+        }
+    } catch (error) {
+        res.status(500).send({ error : 'Error al eliminar el medicamento' });
+    }
 });
