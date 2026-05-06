@@ -99,3 +99,28 @@ medicationsRouter.patch("/medications/:id", async (req, res) => {
     res.status(500).send({ error : 'Error al actualizar el medicamento' });
   }
 });
+
+medicationsRouter.delete("/medications", async (req, res) => {
+  if (!req.query.nationalCode && !req.query.commercialName && !req.query.activeIngredient) {
+    return res.status(400).send({ message: 'Se requiere nationalCode o commercialName o activeIngredient para eliminar' });
+  }
+  
+  const filter: any = {};
+
+    if (req.query.nationalCode) filter.nationalCode = req.query.nationalCode as string;
+    if (req.query.commercialName) filter.commercialName = req.query.commercialName as string;
+    if (req.query.activeIngredient) filter.activeIngredient = req.query.activeIngredient as string;
+
+  try {
+    const medication = await Medications.findOne(filter);
+    if (!medication) {
+      return res.status(404).send({ message: 'Medicamento no encontrado' });
+    } else {
+      // Falta logica de borrado
+      await Medications.findByIdAndDelete(medication._id);
+      res.status(200).send(medication);
+    }
+  } catch (error) {
+    res.status(500).send({ error : 'Error al eliminar el medicamento' });
+  }
+});

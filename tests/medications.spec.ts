@@ -333,3 +333,56 @@ describe("PATCH /medications/:id", () => {
         spy.mockRestore();
     });
 });
+
+describe("DELETE /medications", () => {
+    test("Debería eliminar un medicamento por código nacional", async () => {
+        const response = await request(app)
+        .delete("/medications?nationalCode=123456ABC")
+        .expect(200);
+        expect(response.body.nationalCode).toBe("123456ABC");
+    });
+
+    test("Debería eliminar un medicamento por nombre comercial", async () => {
+        const response = await request(app)
+        .delete("/medications?commercialName=Ibuprofeno")
+        .expect(200);
+        expect(response.body.commercialName).toBe("Ibuprofeno");
+    });
+    test("Debería eliminar un medicamento por principio activo", async () => {
+        const response = await request(app)
+        .delete("/medications?activeIngredient=IbuprofenoActivo")
+        .expect(200);
+        expect(response.body.activeIngredient).toBe("IbuprofenoActivo");
+    });
+
+    test("Debería eliminar un medicamento por código nacional y nombre comercial", async () => {
+        const response = await request(app)
+        .delete("/medications?nationalCode=123456ABC&commercialName=Ibuprofeno")
+        .expect(200);
+        expect(response.body.nationalCode).toBe("123456ABC");
+        expect(response.body.commercialName).toBe("Ibuprofeno");
+    });
+
+    test("Debería devolver 404 si el medicamento no existe", async () => {
+        const response = await request(app)
+        .delete("/medications?nationalCode=NONEXISTENT123")
+        .expect(404);
+        expect(response.body.message).toBe('Medicamento no encontrado');
+    });
+
+    test("Debería manejar errores de base de datos y devolver 500", async () => {
+        const spy = vi.spyOn(Medications, 'findOne').mockRejectedValue(new Error('Database error'));
+        const response = await request(app)
+        .delete("/medications?nationalCode=123456ABC")
+        .expect(500);
+        spy.mockRestore();
+    });
+
+    test("Debería devolver 400 si no se proporcionan filtros", async () => {
+        const response = await request(app)
+        .delete("/medications")
+        .expect(400);
+        expect(response.body.message).toBe('Se requiere nationalCode o commercialName o activeIngredient para eliminar');
+    });
+});
+
