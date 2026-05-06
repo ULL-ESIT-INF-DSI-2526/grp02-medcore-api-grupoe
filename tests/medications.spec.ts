@@ -189,6 +189,15 @@ describe("GET /medications", () => {
     expect(response.body[0].nationalCode).toBe("123456ABC");
   });
 
+  test("Deberia filtrar medicamentos por código nacional y nombre comercial", async () => {
+    const response = await request(app)
+      .get("/medications?nationalCode=123456ABC&commercialName=Ibuprofeno")
+      .expect(200);
+    expect(response.body.length).toBe(1);
+    expect(response.body[0].nationalCode).toBe("123456ABC");
+    expect(response.body[0].commercialName).toBe("Ibuprofeno");
+  });
+
   test("Debería devolver 404 si no se encuentran medicamentos con los filtros", async () => {
     const response = await request(app)
       .get("/medications?commercialName=MedicamentoInexistente")
@@ -235,4 +244,62 @@ describe("GET /medications/:id", () => {
       .get("/medications/invalid-id")
       .expect(500);
   });
+});
+
+describe("PATCH /medications", () => {
+    test("Debería actualizar un medicamento por código nacional", async () => {
+        const response = await request(app)
+        .patch("/medications?nationalCode=123456ABC")
+        .send({ stock: 150 })
+        .expect(200);
+        expect(response.body.stock).toBe(150);
+    });
+
+    test("Debería actualizar un medicamento por nombre comercial", async () => {
+        const response = await request(app)
+        .patch("/medications?commercialName=Ibuprofeno")
+        .send({ stock: 120 })
+        .expect(200);
+        expect(response.body.stock).toBe(120);
+    });
+    test("Debería actualizar un medicamento por principio activo", async () => {
+        const response = await request(app)
+        .patch("/medications?activeIngredient=IbuprofenoActivo")
+        .send({ stock: 130 })
+        .expect(200);
+        expect(response.body.stock).toBe(130);
+    });
+
+    test("Deberiía actualizar un medicamento por código nacional y nombre comercial", async () => {
+        const response = await request(app)
+        .patch("/medications?nationalCode=123456ABC&commercialName=Ibuprofeno")
+        .send({ stock: 140 })
+        .expect(200);
+        expect(response.body.stock).toBe(140);
+    });
+
+    test("Debería devolver 404 si el medicamento no existe", async () => {
+        const response = await request(app)
+        .patch("/medications?nationalCode=NONEXISTENT123")
+        .send({ stock: 150 })
+        .expect(404);
+        expect(response.body.message).toBe('Medicamento no encontrado');
+    });
+    
+    test("Debería manejar errores de base de datos y devolver 500", async () => {
+        const spy = vi.spyOn(Medications, 'findOneAndUpdate').mockRejectedValue(new Error('Database error'));
+        const response = await request(app)
+        .patch("/medications?nationalCode=123456ABC")
+        .send({ stock: 150 })
+        .expect(500);
+        spy.mockRestore();
+    });
+
+    test("Debería devolver 400 si no se proporcionan filtros", async () => {
+        const response = await request(app)
+        .patch("/medications")
+        .send({ stock: 150 })
+        .expect(400);
+        expect(response.body.message).toBe('Se requiere nationalCode o commercialName o activeIngredient para actualizar');
+    });
 });

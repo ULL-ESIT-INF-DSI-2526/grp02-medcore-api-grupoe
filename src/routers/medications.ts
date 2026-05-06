@@ -57,3 +57,31 @@ medicationsRouter.get("/medications/:id", async (req, res) => {
         res.status(500).send({ error : 'Error al obtener el medicamento' });
     }
 });
+
+/**
+ * 
+ */
+
+medicationsRouter.patch("/medications", async (req, res) => {
+  if (!req.query.nationalCode && !req.query.commercialName && !req.query.activeIngredient) {
+    return res.status(400).send({ message: 'Se requiere nationalCode o commercialName o activeIngredient para actualizar' });
+  }
+  
+  const filter: any = {};
+
+    if (req.query.nationalCode) filter.nationalCode = req.query.nationalCode as string;
+    if (req.query.commercialName) filter.commercialName = req.query.commercialName as string;
+    if (req.query.activeIngredient) filter.activeIngredient = req.query.activeIngredient as string;
+
+  const updateData = req.body;
+
+  try {
+    const medication = await Medications.findOneAndUpdate(filter, updateData, { new: true, runValidators: true });
+    if (!medication) {
+      return res.status(404).send({ message: 'Medicamento no encontrado' });
+    }
+    res.status(200).send(medication);
+  } catch (error) {
+    res.status(500).send({ error : 'Error al actualizar el medicamento' });
+  }
+});
