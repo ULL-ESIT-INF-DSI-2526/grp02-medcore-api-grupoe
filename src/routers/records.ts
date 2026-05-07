@@ -7,7 +7,7 @@ export const recordsRouter = express.Router();
 
 recordsRouter.post('/records', async (req, res) => {
     try {
-      const { patientDni, staffColegiado, type, reason, diagnosis, medications } = req.body;
+      const { patientDni, staffColegiado, type, startDate, reason, diagnosis, medications, status } = req.body;
       const { patientId, staffId } = await verifyExistencePersons(patientDni, staffColegiado);
       const { processedMedications, total } = await verifyExistenceStock(medications);
 
@@ -15,15 +15,18 @@ recordsRouter.post('/records', async (req, res) => {
         patient: patientId,
         staff: staffId,
         type,
+        startDate,
         reason,
         diagnosis,
         medications: processedMedications,
         totalCost: total,
+        status
       });
 
       const saved = await record.save();
       res.status(201).send(saved);
-    } catch (error) {
-      res.status(500).send({ error: 'Error al crear el registro' });
+    } catch (error: any) {
+      const status = error.status || 500;
+      res.status(status).send({ error: error.message});
     }
 });

@@ -35,6 +35,7 @@ const RecordsSchema = new Schema<RecordsDocumentInterface>({
   },
   startDate: {
     type: Date,
+    default: Date.now,
     required: true,
   },
   endDate: {
@@ -73,6 +74,7 @@ const RecordsSchema = new Schema<RecordsDocumentInterface>({
     type: String,
     enum: ['abierto', 'cerrado'],
     required: true,
+    default: 'abierto',
   },
 });
 
