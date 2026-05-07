@@ -76,4 +76,4 @@ const RecordsSchema = new Schema<RecordsDocumentInterface>({
   },
 });
 
-export const RecordsModel = model<RecordsDocumentInterface>('Records', RecordsSchema);
+export const Records = model<RecordsDocumentInterface>('Records', RecordsSchema);

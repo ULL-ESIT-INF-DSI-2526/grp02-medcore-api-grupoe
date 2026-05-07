@@ -4,12 +4,14 @@ import { patientRouter } from './routers/patient.js';
 import { staffRouter } from './routers/staff.js';
 import { medicationsRouter } from './routers/medications.js';
 import { defaultRouter } from './routers/default.js';
+import { recordsRouter } from './routers/records.js';
 
 const app = express();
 app.use(express.json());
 app.use(patientRouter);
 app.use(staffRouter);
 app.use(medicationsRouter);
+app.use(recordsRouter);
 app.use(defaultRouter);
 
 const port = process.env.PORT || 3000;
