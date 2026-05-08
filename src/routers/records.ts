@@ -249,3 +249,32 @@ recordsRouter.patch('/records/:id', async (req, res) => {
     res.status(500).send(error);
   }
 });
+
+/**
+ * Ruta DELETE para eliminar un registro médico por su ID. Antes de eliminar el registro, restaura el stock de los medicamentos asociados al registro.
+ * Si el registro médico no existe, devuelve un error 404. Maneja errores de base de datos y devuelve el código de estado adecuado.
+ */
+recordsRouter.delete('/records/:id', async (req, res) => {
+  try {
+    const record = await Records.findById(req.params.id);
+    
+    if (!record) {
+      return res.status(404).send({ error: "Record not found" });
+    }
+
+    // Restaurar el stock de los medicamentos asociados al registro antes de eliminarlo
+    for (const item of record.medications) {
+      const med = await Medications.findById(item.medication);
+      if (med) {
+        med.stock += item.quantity;
+        await med.save();
+      }
+    }
+
+    await Records.findByIdAndDelete(req.params.id);
+    
+    res.send({ message: "Record deleted successfully" });
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});

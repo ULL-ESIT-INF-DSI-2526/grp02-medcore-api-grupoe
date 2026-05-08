@@ -52,26 +52,28 @@ describe("POST /medications", () => {
   test("Debería fallar al crear un medicamento con datos inválidos", async () => {
     await request(app)
       .post("/medications")
-      .send(validMedication)
+      .send({ commercialName: "Medicamento a medias" }) 
       .expect(400);
   });
 
   test("Debería fallar al crear un medicamento con un código nacional duplicado", async () => {
+    const existingMed = await Medications.findOne();
+
     await request(app)
       .post("/medications")
       .send({
-        commercialName: "Ibuprofeno Duplicado",
-        activeIngredient: "IbuprofenoActivoDuplicado",
-        nationalCode: "123456ABC", // Mismo código nacional que el medicamento válido
+        commercialName: "Paracetamol Pirata",
+        activeIngredient: "Falso",
+        nationalCode: existingMed!.nationalCode,
         pharmaceuticalForm: "comprimido",
-        standardDose: 200,
-        doseUnit: "mg",
+        standardDose: 500,
+        unitOfMeasure: "mg",
         administrationRoute: "oral",
         stock: 100,
-        unitPrice: 5.99,
-        requiredPrescription: true,
-        expirationDate: "2026-12-31",
-        contraindications: ["Embarazo", "Lactancia"]
+        unitPrice: 5,
+        requiresPrescription: false,
+        expirationDate: new Date("2030-01-01"),
+        contraindications: []
       })
       .expect(400);
   });

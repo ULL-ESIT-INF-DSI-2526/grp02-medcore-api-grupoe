@@ -53,7 +53,10 @@ describe("POST /patients", () => {
   });
 
   test("Deberia dar error al crear un paciente con datos inválidos", async () => {
-    await request(app).post("/patients").send(firstPatient).expect(400);
+    await request(app)
+      .post("/patients")
+      .send({ fullName: "Paciente Incompleto" })
+      .expect(400);
   });
 
   test("Deberia dar error al hacer una petición a un ruta incorrecta", async () => {

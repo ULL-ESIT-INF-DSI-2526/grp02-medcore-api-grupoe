@@ -582,3 +582,121 @@ describe("PATCH /records/:id", () => {
     findByIdSpy.mockRestore();
   });
 });
+
+describe("DELETE /records/:id", () => {
+  test("Debería eliminar un registro y restaurar el stock de los medicamentos", async () => {
+    const patient = await Patient.findOne();
+    const staff = await Staff.findOne();
+    
+    // Creamos un medicamento de prueba
+    const testMed = await Medications.create({
+      commercialName: "Medicina Delete",
+      activeIngredient: "Principio D",
+      nationalCode: "DEL123",
+      pharmaceuticalForm: "comprimido",
+      standardDose: 500,
+      doseUnit: "mg",
+      administrationRoute: "oral",
+      stock: 50,
+      unitPrice: 10,
+      requiredPrescription: false,
+      expirationDate: new Date("2030-01-01"),
+      contraindications: []
+    });
+
+    const initialStock = testMed.stock;
+    const quantityPrescribed = 5;
+
+    // Creamos el registro médico con ese medicamento
+    const record = await Records.create({
+      patient: patient!._id,
+      staff: staff!._id,
+      type: "consulta ambulatoria",
+      startDate: new Date(),
+      reason: "Prueba de borrado",
+      medications: [{
+        medication: testMed._id,
+        quantity: quantityPrescribed,
+        posology: "Tomar 1",
+      }],
+      totalCost: testMed.unitPrice * quantityPrescribed,
+      status: "cerrado"
+    });
+
+    // Ejecutamos el borrado
+    const response = await request(app)
+      .delete(`/records/${record._id}`)
+      .expect(200);
+
+    expect(response.body.message).toBe("Record deleted successfully");
+
+    // Verificamos que el stock se ha restaurado correctamente
+    const medAfterDelete = await Medications.findById(testMed._id);
+    expect(medAfterDelete?.stock).toBe(initialStock + quantityPrescribed);
+  });
+
+  test("Debería eliminar el registro aunque el medicamento ya no exista en la base de datos", async () => {
+    const patient = await Patient.findOne();
+    const staff = await Staff.findOne();
+    
+    const tempMed = await Medications.create({
+      commercialName: "Medicina Temporal",
+      activeIngredient: "Temp",
+      nationalCode: "TEMP999",
+      pharmaceuticalForm: "comprimido",
+      standardDose: 100,
+      doseUnit: "mg",
+      administrationRoute: "oral",
+      stock: 20,
+      unitPrice: 5,
+      requiredPrescription: false,
+      expirationDate: new Date("2030-01-01"),
+      contraindications: []
+    });
+
+    const record = await Records.create({
+      patient: patient!._id,
+      staff: staff!._id,
+      type: "consulta ambulatoria",
+      startDate: new Date(),
+      reason: "Prueba de ifs en delete",
+      medications: [{
+        medication: tempMed._id,
+        quantity: 2,
+        posology: "Tomar 1",
+      }],
+      totalCost: 10,
+      status: "abierto"
+    });
+
+    // Simulamos que el medicamento fue eliminado del catálogo antes de borrar el registro
+    await Medications.findByIdAndDelete(tempMed._id);
+
+    // El borrado del registro debe funcionar sin lanzar error por culpa del medicamento fantasma
+    const response = await request(app)
+      .delete(`/records/${record._id}`)
+      .expect(200);
+
+    expect(response.body.message).toBe("Record deleted successfully");
+  });
+
+  test("Debería devolver 404 al intentar eliminar un registro que no existe", async () => {
+    const nonExistentId = new mongoose.Types.ObjectId();
+    const response = await request(app)
+      .delete(`/records/${nonExistentId}`)
+      .expect(404);
+
+    expect(response.body.error).toBe("Record not found");
+  });
+
+  test("Debería devolver error 500 si hay un fallo en la base de datos", async () => {
+    const dummyId = new mongoose.Types.ObjectId();
+    const findByIdSpy = vi.spyOn(Records, 'findById').mockRejectedValue(new Error('Fallo simulado'));
+
+    await request(app)
+      .delete(`/records/${dummyId}`)
+      .expect(500);
+
+    findByIdSpy.mockRestore();
+  });
+});
