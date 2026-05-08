@@ -251,6 +251,117 @@ describe("POST /records", () => {
   });
 });
 
+
+describe("GET /records", () => {
+
+  test("Debería obtener todos los registros sin filtros", async () => {
+    const patient = await Patient.findOne();
+    const staff = await Staff.findOne();
+
+    await Records.create({
+      patient: patient!._id,
+      staff: staff!._id,
+      type: "consulta ambulatoria",
+      startDate: new Date(),
+      reason: "Dolor de cabeza",
+      medications: [],
+      totalCost: 0,
+      status: "abierto"
+    });
+    const response = await request(app).get("/records").expect(200);
+    expect(Array.isArray(response.body)).toBe(true);
+  });
+
+  test("Debería filtrar registros por DNI del paciente", async () => {
+    const patient = await Patient.findOne();
+    const staff = await Staff.findOne();
+
+    await Records.create({
+      patient: patient!._id,
+      staff: staff!._id,
+      type: "consulta ambulatoria",
+      startDate: new Date(),
+      reason: "Dolor de cabeza",
+      medications: [],
+      totalCost: 0,
+      status: "abierto"
+    });
+
+    const response = await request(app)
+      .get("/records")
+      .query({ patientDni: "12345678A" })
+      .expect(200);
+
+    expect(Array.isArray(response.body)).toBe(true);
+    expect(response.body[0].patient.idNumber).toBe("12345678A");
+
+  });
+
+  test("Debería filtrar registros por rango de fechas y tipo", async () => {
+    const patient = await Patient.findOne();
+    const staff = await Staff.findOne();
+    await Records.create({
+      patient: patient!._id,
+      staff: staff!._id,
+      type: "consulta ambulatoria",
+      startDate: new Date("2024-06-01"),
+      reason: "Dolor de cabeza",
+      medications: [],
+      totalCost: 0,
+      status: "abierto"
+    });
+
+    const response = await request(app)
+      .get("/records")
+      .query({
+        startDate: "2024-01-01",
+        endDate: "2024-12-31",
+        type: "consulta ambulatoria",
+      })
+      .expect(200);
+    
+    expect(Array.isArray(response.body)).toBe(true);
+    const recordDate = new Date(response.body[0].startDate);
+    expect(recordDate >= new Date("2024-01-01")).toBe(true);
+    expect(recordDate <= new Date("2024-12-31")).toBe(true);
+    expect(response.body[0].type).toBe("consulta ambulatoria");
+  });
+
+  test("Debería devolver 404 si el paciente no existe al filtrar por DNI", async () => {
+    const response = await request(app)
+      .get("/records")
+      .query({ patientDni: "99999999Z" })
+      .expect(404);
+
+    expect(response.body.error).toBe("Paciente no encontrado");
+  });
+
+  test("Debería devolver 404 si no se encuentran registros con los filtros aplicados", async () => {
+    const response = await request(app)
+      .get("/records")
+      .query({
+        startDate: "2025-01-01",
+        endDate: "2025-12-31",
+        type: "ingreso hospitalario",
+      })
+      .expect(404);
+      
+    expect(response.body.error).toBe("Records not found");
+  });
+
+  test("Deberia devolver error 500 si hay un fallo en la base de datos", async () => {
+    const findSpy = vi.spyOn(Records, 'find').mockRejectedValue(new Error('Fallo simulado en la BD'));
+
+    await request(app).get("/records").expect(500);
+
+    findSpy.mockRestore();
+  });
+
+  test("Deberia dar error al hacer una petición a un ruta incorrecta", async () => {
+    await request(app).get("/r").expect(501); // Ruta incorrecta
+  });
+});
+
 describe("GET /records/:id", () => {
   test("Debería obtener un registro por su ID", async () => {
     const patient = await Patient.findOne();
