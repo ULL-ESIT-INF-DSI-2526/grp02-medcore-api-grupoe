@@ -23,11 +23,13 @@ medicationsRouter.post('/medications', async (req, res) => {
  * Si no se proporcionan filtros, devuelve todos los medicamentos. Maneja errores de base de datos y devuelve el código de estado adecuado.
  */
 medicationsRouter.get("/medications", async (req, res) => {
-    const filter: any = {};
-
-    if (req.query.commercialName) filter.commercialName = req.query.commercialName;
-    if (req.query.activeIngredient) filter.activeIngredient = req.query.activeIngredient;
-    if (req.query.nationalCode) filter.nationalCode = req.query.nationalCode;
+    const filter = req.query.commercialName
+    ? { commercialName: req.query.commercialName.toString() }
+    : req.query.activeIngredient
+    ? { activeIngredient: req.query.activeIngredient.toString() }
+    : req.query.nationalCode
+    ? { nationalCode: req.query.nationalCode.toString() }
+    : {};
 
     try {
         const medications = await Medications.find(filter);
@@ -67,11 +69,13 @@ medicationsRouter.patch("/medications", async (req, res) => {
     return res.status(400).send({ message: 'Se requiere nationalCode o commercialName o activeIngredient para actualizar' });
   }
   
-  const filter: any = {};
-
-    if (req.query.nationalCode) filter.nationalCode = req.query.nationalCode as string;
-    if (req.query.commercialName) filter.commercialName = req.query.commercialName as string;
-    if (req.query.activeIngredient) filter.activeIngredient = req.query.activeIngredient as string;
+  const filter = req.query.nationalCode
+    ? { nationalCode: req.query.nationalCode.toString() }
+    : req.query.commercialName
+    ? { commercialName: req.query.commercialName.toString() }
+    : req.query.activeIngredient
+    ? { activeIngredient: req.query.activeIngredient.toString() }
+    : {};
 
   const updateData = req.body;
 
@@ -105,11 +109,13 @@ medicationsRouter.delete("/medications", async (req, res) => {
     return res.status(400).send({ message: 'Se requiere nationalCode o commercialName o activeIngredient para eliminar' });
   }
   
-  const filter: any = {};
-
-    if (req.query.nationalCode) filter.nationalCode = req.query.nationalCode as string;
-    if (req.query.commercialName) filter.commercialName = req.query.commercialName as string;
-    if (req.query.activeIngredient) filter.activeIngredient = req.query.activeIngredient as string;
+  const filter = req.query.nationalCode
+    ? { nationalCode: req.query.nationalCode.toString() }
+    : req.query.commercialName
+    ? { commercialName: req.query.commercialName.toString() }
+    : req.query.activeIngredient
+    ? { activeIngredient: req.query.activeIngredient.toString() }
+    : {};
 
   try {
     const medication = await Medications.findOne(filter);
