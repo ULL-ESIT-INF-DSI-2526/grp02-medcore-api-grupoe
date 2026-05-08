@@ -68,32 +68,51 @@ recordsRouter.post('/records', async (req, res) => {
 });
 
 /**
- * Ruta GET para obtener registros médicos. Permite filtrar registros por DNI del paciente o rango de fechas o con tipo específico a través de query parameters.
+ * Ruta GET para obtener registros médicos. Permite filtrar registros por DNI del paciente a través de query parameters.
+ * Si no se proporcionan filtros, devuelve todos los registros. Maneja errores de base de datos y devuelve el código de estado adecuado.
+ */
+recordsRouter.get("/records", async (req, res, next) => {
+  // Si no viene el DNI en la query, saltamos al siguiente GET
+  if (!req.query.patientDni) {
+    return next();
+  }
+  try {
+    const patient = await Patient.findOne({ idNumber: req.query.patientDni.toString() });
+    if (!patient) {
+      return res.status(404).send({ error: "Paciente no encontrado" });
+    }
+
+    const records = await Records.find({ patient: patient._id })
+      .sort({ startDate: 1 }) 
+      .populate("patient", "fullName idNumber")
+      .populate("staff", "fullName collegiateNumber specialty")
+      .populate("medications.medication", "commercialName nationalCode unitPrice");
+    if (records.length !== 0) {
+      res.send(records);
+    } else {
+      res.status(404).send({ error: "Records not found" });
+    }
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});
+
+/**
+ * Ruta GET para obtener registros médicos. Permite filtrar registros por rango de fechas o con tipo específico a través de query parameters.
  * Si no se proporcionan filtros, devuelve todos los registros. Maneja errores de base de datos y devuelve el código de estado adecuado.
  */
 recordsRouter.get("/records", async (req, res) => {
-  try { 
-    let resolvedPatientId: mongoose.Types.ObjectId | undefined;
-    // Sacamos el ID con el DNI si se proporciona 
-    if (req.query.patientDni) {
-      const patient = await Patient.findOne({ idNumber: req.query.patientDni.toString() });
-      if (!patient) {
-        return res.status(404).send({ error: "Paciente no encontrado" });
-      }
-      resolvedPatientId = patient._id as mongoose.Types.ObjectId;
-    }
-    // Filtro
-    const filter = req.query.patientDni
-      ? { patient: resolvedPatientId } : req.query.startDate && req.query.endDate
-      ? {
-          startDate: {
-            $gte: new Date(req.query.startDate.toString()),
-            $lte: new Date(req.query.endDate.toString()),
-          },
-          ...(req.query.type ? { type: req.query.type.toString() as 'consulta ambulatoria' | 'ingreso hospitalario' } : {})
-        }
-      : {};
-    // Busqueda
+  try {
+    const filter = req.query.startDate && req.query.endDate ? {
+      startDate: {
+        $gte: new Date(req.query.startDate.toString()),
+        $lte: new Date(req.query.endDate.toString()),
+      },
+      ...(req.query.type 
+            ? { type: req.query.type.toString() as 'consulta ambulatoria' | 'ingreso hospitalario' } 
+            : {})
+    } : {};
+
     const records = await Records.find(filter)
       .sort({ startDate: 1 })
       .populate("patient", "fullName idNumber")
@@ -107,7 +126,7 @@ recordsRouter.get("/records", async (req, res) => {
         error: "Records not found",
       });
     }
-  } catch (error) { 
+  } catch (error) {
     res.status(500).send(error);
   }
 });

@@ -189,7 +189,6 @@ const options: Options = {
       },
     },
   },
-  // Ensure the paths match where you are keeping your route files
   apis: ["./src/routes/*.ts", "./dist/routes/*.js"],
 };
 
