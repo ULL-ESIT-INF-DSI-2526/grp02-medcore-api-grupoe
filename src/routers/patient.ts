@@ -90,11 +90,12 @@ patientRouter.post('/patients', async (req, res) => {
  */
 
 patientRouter.get('/patients', async (req, res) => {
-  const filter: any = {};
-
-  if (req.query.fullName) filter.fullName = req.query.fullName;
-  if (req.query.idNumber) filter.idNumber = req.query.idNumber;
-
+  const filter = req.query.fullName
+  ? { fullName: req.query.fullName.toString() }
+  : req.query.idNumber
+  ? { idNumber: req.query.idNumber.toString() }
+  : {};
+  
   try {
     const patients = await Patient.find(filter);
     res.status(200).send(patients);
