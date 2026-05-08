@@ -6,6 +6,40 @@ import { verifyExistencePersons, verifyExistenceStock } from '../utils/utils.js'
 
 export const recordsRouter = express.Router();
 
+/**
+ * @swagger
+ * /records:
+ *   post:
+ *     summary: Crea un nuevo registro médico
+ *     description: Recibe los datos del registro en el cuerpo de la solicitud (utilizando patientDni y staffColegiado). Verifica la existencia del paciente, del personal y del stock de medicamentos para calcular el coste total antes de guardarlo en la base de datos.
+ *     tags:
+ *       - Records
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RecordCreate'
+ *     responses:
+ *       201:
+ *         description: Registro médico creado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Record'
+ *       400:
+ *         description: Error de validación, falta de stock o entidades no encontradas (paciente/staff)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 
 recordsRouter.post('/records', async (req, res) => {
   try {
@@ -83,6 +117,43 @@ recordsRouter.get("/records", async (req, res) => {
  * Ruta GET para obtener un un registro médico por su ID. Recibe el ID del miembro como parámetro en la URL, busca el registro en la base de datos y lo devuelve.
  * Si el registro médico no existe, devuelve un error 404. Maneja errores de base de datos y devuelve el código de estado adecuado.
  */
+
+/**
+ * @swagger
+ * /records/{id}:
+ *   get:
+ *     summary: Obtiene un registro médico por su ID
+ *     description: Recibe el ID del registro como parámetro en la URL, lo busca en la base de datos y lo devuelve. Los datos devueltos incluyen información detallada (poblada) del paciente, personal médico y medicamentos asociados.
+ *     tags:
+ *       - Records
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID único del registro médico
+ *     responses:
+ *       200:
+ *         description: Registro médico encontrado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Record'
+ *       404:
+ *         description: Registro médico no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
 recordsRouter.get("/records/:id", async (req, res) => {
   try {
     // Usamos el populate para obtener los datos relacionados de paciente, staff y medicamentos en lugar de solo sus IDs (para dar mas info)
