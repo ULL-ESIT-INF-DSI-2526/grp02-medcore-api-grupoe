@@ -250,3 +250,46 @@ describe("POST /records", () => {
     spy.mockRestore();
   });
 });
+
+describe("GET /records/:id", () => {
+  test("Debería obtener un registro por su ID", async () => {
+    const patient = await Patient.findOne();
+    const staff = await Staff.findOne();
+
+    const record = await Records.create({
+      patient: patient!._id,
+      staff: staff!._id,
+      type: "consulta ambulatoria",
+      startDate: new Date(),
+      reason: "Dolor de cabeza",
+      medications: [],
+      totalCost: 0,
+      status: "abierto"
+    });
+
+    const response = await request(app)
+      .get(`/records/${record._id}`)
+      .expect(200);
+    // Verificamos que los datos del registro sean correctos
+    expect(response.body._id).toBe(record._id.toString());
+    expect(response.body.staff.fullName).toBe("Dr. Juan Pérez");
+  });
+
+  test("Debería devolver 404 al buscar un ID que no existe", async () => {
+    const nonExistentId = new mongoose.Types.ObjectId();
+    const response = await request(app)
+      .get(`/records/${nonExistentId}`)
+      .expect(404);
+
+    expect(response.body.error).toBe("Record not found");
+  });
+
+  test("Debería devolver error 500 si hay un fallo en la base de datos", async () => {
+    const findByIdSpy = vi.spyOn(Records, 'findById').mockRejectedValue(new Error('Fallo simulado'));
+
+    const dummyId = new mongoose.Types.ObjectId();
+    await request(app).get(`/records/${dummyId}`).expect(500);
+
+    findByIdSpy.mockRestore();
+  });
+});
