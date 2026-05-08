@@ -3,6 +3,7 @@ import { Records } from '../models/records.js';
 import { Patient } from '../models/patient.js';
 import mongoose from 'mongoose';
 import { verifyExistencePersons, verifyExistenceStock } from '../utils/utils.js';
+import { Medications } from '../models/medications.js';
 
 export const recordsRouter = express.Router();
 
@@ -188,6 +189,62 @@ recordsRouter.get("/records/:id", async (req, res) => {
         error: "Record not found",
       });
     }
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});
+
+/**
+ * Ruta PATCH para actualizar un registro médico por su ID.
+ * Si se modifican los medicamentos, restaura el stock anterior, verifica el nuevo stock disponible y actualiza el coste total.
+ */
+recordsRouter.patch('/records/:id', async (req, res) => {
+  try {
+    const record = await Records.findById(req.params.id);
+    
+    if (!record) {
+      return res.status(404).send({ error: "Record not found" });
+    }
+
+    if (req.body.medications) {
+      // Restaurar el stock de los medicamentos antiguos
+      for (const oldItem of record.medications) {
+        const med = await Medications.findById(oldItem.medication);
+        if (med) {
+          med.stock += oldItem.quantity;
+          await med.save();
+        }
+      }
+
+      // Verificar los nuevos medicamentos y descontar stock
+      try {
+        const { processedMedications, total } = await verifyExistenceStock(req.body.medications);
+        req.body.medications = processedMedications;
+        req.body.totalCost = total;
+      } catch (error: any) {
+        // Revertir cambios: Si falla, volvemos a restar el stock que habíamos restaurado
+        for (const oldItem of record.medications) {
+          const med = await Medications.findById(oldItem.medication);
+          if (med) {
+            med.stock -= oldItem.quantity;
+            await med.save();
+          }
+        }
+        const status = error.status || 400;
+        return res.status(status).send({ error: error.message });
+      }
+    }
+
+    // Aplicar los cambios al documento y guardar
+    if (req.body.type) record.type = req.body.type;
+    if (req.body.startDate) record.startDate = req.body.startDate;
+    if (req.body.endDate) record.endDate = req.body.endDate;
+    if (req.body.reason) record.reason = req.body.reason;
+    if (req.body.status) record.status = req.body.status;
+    
+    const saved = await record.save();
+    
+    res.send(saved);
   } catch (error) {
     res.status(500).send(error);
   }

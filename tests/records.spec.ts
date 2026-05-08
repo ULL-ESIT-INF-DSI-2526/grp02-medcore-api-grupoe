@@ -404,3 +404,181 @@ describe("GET /records/:id", () => {
     findByIdSpy.mockRestore();
   });
 });
+
+describe("PATCH /records/:id", () => {
+  test("Debería actualizar un registro existente", async () => {
+    const patient = await Patient.findOne();
+    const staff = await Staff.findOne();
+
+    const record = await Records.create({
+      patient: patient!._id,
+      staff: staff!._id,
+      type: "consulta ambulatoria",
+      startDate: new Date(),
+      reason: "Dolor de cabeza",
+      medications: [],
+      totalCost: 0,
+      status: "abierto"
+    });
+
+    const response = await request(app)
+      .patch(`/records/${record._id}`)
+      .send({ reason: "Dolor de espalda" })
+      .expect(200);
+
+    expect(response.body.reason).toBe("Dolor de espalda");
+  });
+
+  test("Debería actualizar un registro existente con medicamentos nuevos", async () => {
+    const patient = await Patient.findOne();
+    const staff = await Staff.findOne();
+    const validMed = await Medications.findOne({ nationalCode: "123456ABC" });
+
+    const record = await Records.create({
+      patient: patient!._id,
+      staff: staff!._id,
+      type: "consulta ambulatoria",
+      startDate: new Date(),
+      reason: "Dolor de cabeza",
+      medications: [{
+        medication: validMed!._id,
+        quantity: 1,
+        posology: "Tomar 1 comprimido cada 8 horas",
+      }],
+      totalCost: validMed!.unitPrice,
+      status: "abierto"
+    });
+
+    const response = await request(app)
+      .patch(`/records/${record._id}`)
+      .send({
+        medications: [
+          {
+            medication: "123456ABC",
+            quantity: 1,
+            posology: "Tomar 1 comprimido cada 8 horas",
+          },
+        ],
+      })
+      .expect(200);
+
+    expect(response.body.medications.length).toBe(1);
+    expect(response.body.totalCost).toBe(validMed!.unitPrice);
+  });
+
+  test("Debería revertir los cambios si la actualización falla por stock insuficiente", async () => {
+    const patient = await Patient.findOne();
+    const staff = await Staff.findOne();
+    const validMed = await Medications.findOne({ nationalCode: "123456ABC" });
+    
+    const initialStock = validMed!.stock; 
+
+    const record = await Records.create({
+      patient: patient!._id,
+      staff: staff!._id,
+      type: "consulta ambulatoria",
+      startDate: new Date(),
+      reason: "Prueba de reversión",
+      medications: [{
+        medication: validMed!._id,
+        quantity: 5,
+        posology: "Tomar 1",
+      }],
+      totalCost: validMed!.unitPrice * 5,
+      status: "abierto"
+    });
+
+    const response = await request(app)
+      .patch(`/records/${record._id}`)
+      .send({
+        medications: [
+          {
+            medication: "123456ABC",
+            quantity: 99999, // Forzamos el error por stock
+            posology: "Prueba",
+          },
+        ],
+      })
+      .expect(400);
+
+    expect(response.body.error).toBe("Stock insuficiente");
+
+    // Verificar que el stock volvió a su estado inicial
+    const medAfterReversion = await Medications.findById(validMed!._id);
+    expect(medAfterReversion?.stock).toBe(initialStock);
+  });
+
+  test("Debería ignorar la restauración si el medicamento antiguo fue borrado", async () => {
+    const patient = await Patient.findOne();
+    const staff = await Staff.findOne();
+    
+    const tempMed = await Medications.create({
+      commercialName: "Med Temporal",
+      activeIngredient: "Temp",
+      nationalCode: "TEMP123",
+      pharmaceuticalForm: "comprimido",
+      standardDose: 100,
+      doseUnit: "mg",
+      administrationRoute: "oral",
+      stock: 50,
+      unitPrice: 10,
+      requiredPrescription: false,
+      expirationDate: new Date("2030-01-01"),
+      contraindications: []
+    });
+
+    const record = await Records.create({
+      patient: patient!._id,
+      staff: staff!._id,
+      type: "consulta ambulatoria",
+      startDate: new Date(),
+      reason: "Prueba de referencias nulas",
+      medications: [{
+        medication: tempMed._id,
+        quantity: 2,
+        posology: "Tomar 1",
+      }],
+      totalCost: 20,
+      status: "abierto"
+    });
+
+    // Se elimina de la base de datos el medicamento original
+    await Medications.findByIdAndDelete(tempMed._id);
+
+    // Mandamos un código inválido para forzar el fallo y la ejecución de la reversión de stock
+    await request(app)
+      .patch(`/records/${record._id}`)
+      .send({
+        medications: [
+          {
+            medication: "CODIGO_INEXISTENTE",
+            quantity: 1,
+            posology: "Error",
+          },
+        ],
+      })
+      .expect(404);
+  });
+
+  test("Debería devolver 404 al intentar actualizar un registro que no existe", async () => {
+    const nonExistentId = new mongoose.Types.ObjectId();
+    const response = await request(app)
+      .patch(`/records/${nonExistentId}`)
+      .send({ reason: "Dolor de espalda" })
+      .expect(404);
+
+    expect(response.body.error).toBe("Record not found");
+  });
+
+  test("Debería devolver error 500 si hay un fallo en la base de datos", async () => {
+    const dummyId = new mongoose.Types.ObjectId();
+    const findByIdSpy = vi.spyOn(Records, 'findById').mockRejectedValue(new Error('Fallo simulado'));
+
+    await request(app)
+      .patch(`/records/${dummyId}`)
+      .send({ reason: "Fallo base de datos" })
+      .expect(500);
+
+    findByIdSpy.mockRestore();
+  });
+});
