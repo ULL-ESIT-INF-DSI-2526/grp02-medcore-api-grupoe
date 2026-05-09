@@ -219,9 +219,11 @@ patientRouter.patch('/patients', async (req, res) => {
     return res.status(400).send({ message: 'Se requiere idNumber o fullName para actualizar' });
   }
 
-  const filter: any = {};
-  if (req.query.idNumber) filter.idNumber = req.query.idNumber as string;
-  if (req.query.fullName) filter.fullName = req.query.fullName as string;
+  const filter = req.query.fullName
+  ? { fullName: req.query.fullName.toString() }
+  : req.query.idNumber
+  ? { idNumber: req.query.idNumber.toString() }
+  : {};
 
   const updateData = req.body;
 
@@ -358,9 +360,11 @@ patientRouter.delete('/patients', async (req, res) => {
     return res.status(400).send({ message: 'Se requiere idNumber o fullName para borrar' });
   }
 
-  const filter: any = {};
-  if (req.query.idNumber) filter.idNumber = req.query.idNumber as string;
-  if (req.query.fullName) filter.fullName = req.query.fullName as string;
+  const filter = req.query.fullName
+  ? { fullName: req.query.fullName.toString() }
+  : req.query.idNumber
+  ? { idNumber: req.query.idNumber.toString() }
+  : {};
 
   try {
     const patient = await Patient.findOne(filter);
