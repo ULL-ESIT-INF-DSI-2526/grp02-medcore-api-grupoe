@@ -2,6 +2,7 @@ import { describe, test, expect, beforeEach, afterAll, vi } from "vitest";
 import request from "supertest";
 import { app } from "../src/app.js";
 import { Medications } from "../src/models/medications.js";
+import { Records } from '../src/models/records.js';
 import mongoose from "mongoose";
 
 const validMedication = {
@@ -412,5 +413,28 @@ describe("DELETE /medications/:id", () => {
         .delete(`/medications/${medication!._id}`)
         .expect(500);
         spy.mockRestore();
+    });
+
+    test("Debería devolver 409 si el medicamento está referenciado en registros médicos históricos", async () => {
+        const medication = await Medications.findOne({ commercialName: "Ibuprofeno" });
+        
+        await Records.create({
+              patient: new mongoose.Types.ObjectId(),
+              staff: new mongoose.Types.ObjectId(),
+              type: 'consulta ambulatoria',
+              reason: 'Test de bloqueo',
+              medications: [{ 
+                medication: medication!._id, 
+                quantity: 1, 
+                posology: 'Test' 
+              }],
+              totalCost: 10,
+              status: 'cerrado',
+              startDate: new Date()
+            });
+            const response = await request(app)
+        .delete(`/medications/${medication!._id}`)
+        .expect(409);
+        expect(response.body.message).toBe('Conflicto: No se puede eliminar el medicamento porque ya ha sido prescrito en registros médicos históricos.');
     });
 });

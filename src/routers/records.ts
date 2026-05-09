@@ -44,7 +44,7 @@ export const recordsRouter = express.Router();
 
 recordsRouter.post('/records', async (req, res) => {
   try {
-    const { patientDni, staffColegiado, type, startDate, reason, diagnosis, medications, status } = req.body;
+    const { patientDni, staffColegiado, type, startDate, reason, medications, status } = req.body;
     const { patientId, staffId } = await verifyExistencePersons(patientDni, staffColegiado);
     const { processedMedications, total } = await verifyExistenceStock(medications);
 
@@ -54,7 +54,6 @@ recordsRouter.post('/records', async (req, res) => {
       type,
       startDate,
       reason,
-      diagnosis,
       medications: processedMedications,
       totalCost: total,
       status
@@ -72,6 +71,62 @@ recordsRouter.post('/records', async (req, res) => {
  * Ruta GET para obtener registros médicos. Permite filtrar registros por DNI del paciente a través de query parameters.
  * Si no se proporcionan filtros, devuelve todos los registros. Maneja errores de base de datos y devuelve el código de estado adecuado.
  */
+
+/**
+ * @swagger
+ * /records:
+ *   get:
+ *     summary: Obtiene la lista de registros médicos
+ *     description: Permite obtener todos los registros o filtrarlos. Puede filtrar por el DNI del paciente (`patientDni`), o por un rango de fechas (`startDate` y `endDate`) opcionalmente combinado con el tipo de registro (`type`). Los resultados incluyen datos poblados del paciente, personal y medicamentos.
+ *     tags:
+ *       - Records
+ *     parameters:
+ *       - in: query
+ *         name: patientDni
+ *         schema:
+ *           type: string
+ *         description: DNI del paciente para buscar todos sus registros médicos
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Fecha de inicio para el filtrado por rango (debe usarse junto a endDate)
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Fecha de fin para el filtrado por rango (debe usarse junto a startDate)
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: ['consulta ambulatoria', 'ingreso hospitalario']
+ *         description: Tipo de registro médico para filtrar
+ *     responses:
+ *       200:
+ *         description: Lista de registros médicos obtenida correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Record'
+ *       404:
+ *         description: No se encontraron registros o el paciente no existe
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
 recordsRouter.get("/records", async (req, res, next) => {
   // Si no viene el DNI en la query, saltamos al siguiente GET
   if (!req.query.patientDni) {
@@ -198,6 +253,55 @@ recordsRouter.get("/records/:id", async (req, res) => {
  * Ruta PATCH para actualizar un registro médico por su ID.
  * Si se modifican los medicamentos, restaura el stock anterior, verifica el nuevo stock disponible y actualiza el coste total.
  */
+
+/**
+ * @swagger
+ * /records/{id}:
+ *   patch:
+ *     summary: Actualiza un registro médico específico por su ID
+ *     description: Permite actualizar campos de un registro. Si se actualizan los medicamentos, gestiona automáticamente la reposición y descuento del stock en el inventario. En caso de error de stock, revierte los cambios.
+ *     tags:
+ *       - Records
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID único del registro médico a actualizar
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RecordUpdate'
+ *     responses:
+ *       200:
+ *         description: Registro médico actualizado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Record'
+ *       400:
+ *         description: Error de validación o stock insuficiente de los nuevos medicamentos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Registro médico no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
 recordsRouter.patch('/records/:id', async (req, res) => {
   try {
     const record = await Records.findById(req.params.id);
@@ -254,6 +358,47 @@ recordsRouter.patch('/records/:id', async (req, res) => {
  * Ruta DELETE para eliminar un registro médico por su ID. Antes de eliminar el registro, restaura el stock de los medicamentos asociados al registro.
  * Si el registro médico no existe, devuelve un error 404. Maneja errores de base de datos y devuelve el código de estado adecuado.
  */
+
+/**
+ * @swagger
+ * /records/{id}:
+ *   delete:
+ *     summary: Elimina un registro médico por su ID
+ *     description: Busca el registro por su ID y lo elimina. Antes de eliminarlo, restaura en el inventario el stock de los medicamentos que estaban asociados a dicho registro.
+ *     tags:
+ *       - Records
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID único del registro médico a eliminar
+ *     responses:
+ *       200:
+ *         description: Registro médico eliminado correctamente y stock restaurado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Record deleted successfully
+ *       404:
+ *         description: Registro médico no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
 recordsRouter.delete('/records/:id', async (req, res) => {
   try {
     const record = await Records.findById(req.params.id);

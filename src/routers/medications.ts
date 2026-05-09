@@ -1,6 +1,6 @@
 import express from 'express';
 import { Medications } from '../models/medications.js';
-import { error } from 'node:console';
+import { Records } from '../models/records.js';
 
 export const medicationsRouter = express.Router();
 
@@ -428,11 +428,18 @@ medicationsRouter.delete("/medications/:id", async (req, res) => {
         const medication = await Medications.findById(req.params.id);
         if (!medication) {
           return res.status(404).send({ message: 'Medicamento no encontrado' });
-        } else {
-          // Falta logica de borrado
-          await Medications.findByIdAndDelete(medication._id);
-          res.status(200).send(medication);
+        } 
+
+        const isReferenced = await Records.exists({ 'medications.medication': medication._id });
+        
+        if (isReferenced) {
+          return res.status(409).send({ 
+            message: 'Conflicto: No se puede eliminar el medicamento porque ya ha sido prescrito en registros médicos históricos.' 
+          });
         }
+        await Medications.findByIdAndDelete(medication._id);
+        res.status(200).send(medication);
+        
     } catch (error) {
         res.status(500).send({ error : 'Error al eliminar el medicamento' });
     }
