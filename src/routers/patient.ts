@@ -1,5 +1,6 @@
 import express from 'express';
 import { Patient } from '../models/patient.js';
+import { Records } from '../models/records.js';
 
 export const patientRouter = express.Router();
 
@@ -372,7 +373,12 @@ patientRouter.delete('/patients', async (req, res) => {
       return res.status(404).send({ message: 'Paciente no encontrado' });
     }
 
-    // Faltaría añadir la lógica de borrado cuando tengamos lo de los registros médicos
+    const isReferenced = await Records.findOne({ patient: patient._id });
+    if (isReferenced) {
+      return res.status(409).send({ 
+        message: 'Conflicto: No se puede eliminar un paciente con historial clínico activo. Cambie su estado a inactivo/fallecido.' 
+      });
+    }
 
     await Patient.findByIdAndDelete(patient._id);
     res.status(200).send({ message: 'Paciente eliminado correctamente' });
@@ -433,7 +439,12 @@ patientRouter.delete('/patients/:id', async (req, res) => {
       return res.status(404).send({ message: 'Paciente no encontrado' });
     }
 
-  // Faltaría añadir la lógica de borrado cuando tengamos lo de los registros médicos
+    const isReferenced = await Records.findOne({ patient: patient._id });
+    if (isReferenced) {
+      return res.status(409).send({ 
+        message: 'Conflicto: No se puede eliminar un paciente con historial clínico activo. Cambie su estado a inactivo/fallecido.' 
+      });
+    }
 
     await Patient.findByIdAndDelete(req.params.id);
     res.status(200).send({ message: 'Paciente eliminado correctamente' });
