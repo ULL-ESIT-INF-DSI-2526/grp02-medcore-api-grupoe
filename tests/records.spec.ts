@@ -8,7 +8,11 @@ import { Records } from "../src/models/records.js";
 import mongoose from "mongoose";
 
 beforeEach(async () => {
-  await mongoose.connection.dropDatabase();
+  await Records.deleteMany({});
+  await Staff.deleteMany({});
+  await Patient.deleteMany({});
+  await Medications.deleteMany({});
+
 
   await Staff.create({
     fullName: "Dr. Juan Pérez",

@@ -402,9 +402,8 @@ medicationsRouter.delete("/medications", async (req, res) => {
  * @swagger
  * /medications/{id}:
  *   delete:
- *     summary: Deletes a specific medication by its ID.
- *     description: Borrado de un medicamento por su ID. Si el medicamento tiene registros médicos 
- *     asociados (consultas o ingresos), no se eliminará y se devolverá un error 409 indicando que no se puede eliminar el medicamento porque ya ha sido prescrito en registros médicos históricos. 
+ *     summary: Elimina un medicamento específico por su ID
+ *     description: Busca y elimina un medicamento por su ID. Verifica que el medicamento no haya sido prescrito en registros médicos históricos antes de eliminarlo para mantener la integridad referencial.
  *     tags:
  *       - Medications
  *     parameters:
@@ -413,22 +412,32 @@ medicationsRouter.delete("/medications", async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
- *         description: The unique identifier of the medication to delete
+ *         description: El identificador único del medicamento a eliminar
  *     responses:
  *       200:
- *         description: Medication successfully deleted
+ *         description: Medicamento eliminado exitosamente
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Medication'
  *       404:
- *         description: Medication not found
+ *         description: Medicamento no encontrado
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *       409:
+ *         description: Conflicto - El medicamento ya ha sido prescrito en registros médicos y no puede ser eliminado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: 'Conflicto: No se puede eliminar el medicamento porque ya ha sido prescrito en registros médicos históricos.'
  *       500:
- *         description: Server internal error
+ *         description: Error interno del servidor
  *         content:
  *           application/json:
  *             schema:

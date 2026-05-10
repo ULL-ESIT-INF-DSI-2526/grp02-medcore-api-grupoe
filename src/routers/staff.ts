@@ -463,8 +463,7 @@ staffRouter.delete("/staff", async (req, res) => {
  * /staff/{id}:
  *   delete:
  *     summary: Elimina un miembro del personal por su ID
- *     description: Recibe el ID del personal como parámetro en la URL, busca el personal en la base de datos y lo elimina.
- *     Para la logica de borrado, si el personal tiene registros médicos asociados (consultas o ingresos), no se eliminará y se devolverá un error 409 indicando que no se puede eliminar el personal porque tiene registros asociados. En este caso, se sugiere cambiar el estado del personal a inactivo.
+ *     description: Busca y elimina un miembro del personal por su ID. Verifica que el personal no tenga registros médicos (consultas/ingresos) asociados antes de eliminarlo. Si los tiene, se sugiere cambiar su estado a inactivo.
  *     tags:
  *       - Staff
  *     parameters:
@@ -487,6 +486,16 @@ staffRouter.delete("/staff", async (req, res) => {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *       409:
+ *         description: Conflicto - El personal tiene registros médicos asociados y no puede ser eliminado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: 'Conflicto: No se puede eliminar el personal médico porque tiene registros (consultas/ingresos) asociados. Cambie su estado a inactivo.'
  *       500:
  *         description: Error interno del servidor
  *         content:
