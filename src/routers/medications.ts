@@ -316,9 +316,7 @@ medicationsRouter.patch("/medications/:id", async (req, res) => {
  * /medications:
  *   delete:
  *     summary: Deletes a medication using query parameters
- *     description: Deletes a single medication by matching its nationalCode, commercialName, or activeIngredient. At least one query parameter is required.
- *     Solo se permite el borrado de un medicamento si no tiene registros médicos asociados (consultas o ingresos). Si el medicamento tiene registros asociados, 
- *     no se eliminará y se devolverá un error 409 indicando que no se puede eliminar el medicamento porque ya ha sido prescrito en registros médicos históricos.
+ *     description: Deletes a single medication by matching its nationalCode, commercialName, or activeIngredient. At least one query parameter is required. Solo se permite el borrado de un medicamento si no tiene registros médicos asociados (consultas o ingresos). Si el medicamento tiene registros asociados, no se eliminará y se devolverá un error 409 indicando que no se puede eliminar el medicamento porque ya ha sido prescrito en registros médicos históricos.
  *     tags:
  *       - Medications
  *     parameters:

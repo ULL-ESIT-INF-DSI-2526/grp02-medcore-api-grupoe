@@ -376,8 +376,7 @@ staffRouter.patch("/staff/:id", async (req, res) => {
  * /staff:
  *   delete:
  *     summary: Elimina un personal usando query parameters
- *     description: Permite eliminar un personal filtrando por nombre completo o especialidad. Se requiere al menos un parámetro de búsqueda.
- *     Para la logica de borrado, si el personal tiene registros médicos asociados (consultas o ingresos), no se eliminará y se devolverá un error 409 indicando que no se puede eliminar el personal porque tiene registros asociados. En este caso, se sugiere cambiar el estado del personal a inactivo en lugar de eliminarlo.
+ *     description: Permite eliminar un personal filtrando por nombre completo o especialidad. Se requiere al menos un parámetro de búsqueda. Para la logica de borrado, si el personal tiene registros médicos asociados (consultas o ingresos), no se eliminará y se devolverá un error 409 indicando que no se puede eliminar el personal porque tiene registros asociados. En este caso, se sugiere cambiar el estado del personal a inactivo en lugar de eliminarlo.
  *     tags:
  *       - Staff
  *     parameters:
