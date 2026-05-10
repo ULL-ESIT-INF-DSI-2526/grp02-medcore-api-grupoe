@@ -7,7 +7,7 @@
     "./src/ejericioclase-1/countryCapital.ts"
   ],
   "compilerOptions": {
-    "removeComments": false,
+    // "removeComments": false,
     "target": "ES2024",
     "module": "node16",
     "rootDir": "./src",

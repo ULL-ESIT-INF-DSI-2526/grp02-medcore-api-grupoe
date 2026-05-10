@@ -14,11 +14,10 @@ import { swaggerSpec } from "./config/swagger.js";
  * Esto nos permite importar esta aplicación en nuestros archivos de prueba y realizar solicitudes HTTP en las pruebas.
  */
 export const app = express();
-app.use("/api-docs", swaggerUi.serve);
-app.get("/api-docs", swaggerUi.setup(swaggerSpec));
+
 
 app.use(express.json());
-
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(patientRouter);
 app.use(staffRouter);
 app.use(medicationsRouter);
