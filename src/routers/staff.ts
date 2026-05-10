@@ -1,5 +1,6 @@
 import express from 'express';
 import { Staff } from '../models/staff.js';
+import { Records } from '../models/records.js';
 
 export const staffRouter = express.Router();
 
@@ -376,6 +377,7 @@ staffRouter.patch("/staff/:id", async (req, res) => {
  *   delete:
  *     summary: Elimina un personal usando query parameters
  *     description: Permite eliminar un personal filtrando por nombre completo o especialidad. Se requiere al menos un parámetro de búsqueda.
+ *     Para la logica de borrado, si el personal tiene registros médicos asociados (consultas o ingresos), no se eliminará y se devolverá un error 409 indicando que no se puede eliminar el personal porque tiene registros asociados. En este caso, se sugiere cambiar el estado del personal a inactivo en lugar de eliminarlo.
  *     tags:
  *       - Staff
  *     parameters:
@@ -434,6 +436,14 @@ staffRouter.delete("/staff", async (req, res) => {
           error: "Staff not found",
         });
       } else {
+        // Lógica de boorado
+        const isReferenced = await Records.exists({ staff: personal._id });
+        if (isReferenced) {
+          return res.status(409).send({ 
+            message: 'Conflicto: No se puede eliminar el personal médico porque tiene registros (consultas/ingresos) asociados. Cambie su estado a inactivo.' 
+          });
+        }
+
         await Staff.findByIdAndDelete(personal._id);
         res.send(personal);
       }
@@ -454,6 +464,7 @@ staffRouter.delete("/staff", async (req, res) => {
  *   delete:
  *     summary: Elimina un miembro del personal por su ID
  *     description: Recibe el ID del personal como parámetro en la URL, busca el personal en la base de datos y lo elimina.
+ *     Para la logica de borrado, si el personal tiene registros médicos asociados (consultas o ingresos), no se eliminará y se devolverá un error 409 indicando que no se puede eliminar el personal porque tiene registros asociados. En este caso, se sugiere cambiar el estado del personal a inactivo.
  *     tags:
  *       - Staff
  *     parameters:
@@ -493,7 +504,14 @@ staffRouter.delete("/staff/:id", async (req, res) => {
         error: "Staff not found",
       });
     } else {
-      // Faltaría añadir la lógica de borrado cuando tengamos lo de los registros médicos
+      // Lógica de borrado
+      const isReferenced = await Records.exists({ staff: personal._id });
+      if (isReferenced) {
+        return res.status(409).send({ 
+          message: 'Conflicto: No se puede eliminar el personal médico porque tiene registros (consultas/ingresos) asociados. Cambie su estado a inactivo.' 
+        });
+      }
+
       await Staff.findByIdAndDelete(personal._id);
       res.send(personal);
     }

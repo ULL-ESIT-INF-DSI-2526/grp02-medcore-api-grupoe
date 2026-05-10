@@ -317,6 +317,8 @@ medicationsRouter.patch("/medications/:id", async (req, res) => {
  *   delete:
  *     summary: Deletes a medication using query parameters
  *     description: Deletes a single medication by matching its nationalCode, commercialName, or activeIngredient. At least one query parameter is required.
+ *     Solo se permite el borrado de un medicamento si no tiene registros médicos asociados (consultas o ingresos). Si el medicamento tiene registros asociados, 
+ *     no se eliminará y se devolverá un error 409 indicando que no se puede eliminar el medicamento porque ya ha sido prescrito en registros médicos históricos.
  *     tags:
  *       - Medications
  *     parameters:
@@ -380,6 +382,14 @@ medicationsRouter.delete("/medications", async (req, res) => {
     if (!medication) {
       return res.status(404).send({ message: 'Medicamento no encontrado' });
     } else {
+        // Logica de borrado
+        const isReferenced = await Records.exists({ 'medications.medication': medication._id });
+        if (isReferenced) {
+          return res.status(409).send({ 
+            message: 'Conflicto: No se puede eliminar el medicamento porque ya ha sido prescrito en registros médicos históricos.' 
+          });
+        }
+
       await Medications.findByIdAndDelete(medication._id);
       res.status(200).send(medication);
     }
@@ -392,7 +402,9 @@ medicationsRouter.delete("/medications", async (req, res) => {
  * @swagger
  * /medications/{id}:
  *   delete:
- *     summary: Deletes a specific medication by its ID
+ *     summary: Deletes a specific medication by its ID.
+ *     description: Borrado de un medicamento por su ID. Si el medicamento tiene registros médicos 
+ *     asociados (consultas o ingresos), no se eliminará y se devolverá un error 409 indicando que no se puede eliminar el medicamento porque ya ha sido prescrito en registros médicos históricos. 
  *     tags:
  *       - Medications
  *     parameters:
